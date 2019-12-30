@@ -8,13 +8,18 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@master
     - name: Run Inno Compiler
       run: iscc "installer\theonionpack.iss"
-
+    
     - name: Upload to release
-      uses: JasonEtco/upload-to-release@master
-      with:
-        args: TheOnionPackInstaller.exe application/vnd.microsoft.portable-executable
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: TheOnionPackInstaller.exe
+        asset_path: ./TheOnionPackInstaller.exe
+        asset_name: TheOnionPackInstaller.exe
+        asset_content_type: application/vnd.microsoft.portable-executable
+          
