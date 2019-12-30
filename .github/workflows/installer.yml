@@ -1,7 +1,8 @@
 name: Create Installer for The Onion Pack
 
-on: [release]
-
+on: release:
+  types: [published]
+  
 jobs:
   build:
 
