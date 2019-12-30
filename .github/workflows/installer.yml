@@ -19,7 +19,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: TheOnionPackInstaller.exe
-        asset_path: ./TheOnionPackInstaller.exe
+        asset_path: TheOnionPackInstaller.exe
         asset_name: TheOnionPackInstaller.exe
         asset_content_type: application/vnd.microsoft.portable-executable
           
