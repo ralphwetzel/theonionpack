@@ -1,4 +1,4 @@
-name: CreateInstaller
+name: Create Installer for The Onion Pack
 
 on: [release]
 
@@ -11,3 +11,10 @@ jobs:
     - uses: actions/checkout@v1
     - name: Run Inno Compiler
       run: iscc "installer\theonionpack.iss"
+
+    - name: Upload to release
+      uses: JasonEtco/upload-to-release@master
+      with:
+        args: TheOnionPackInstaller.exe application/vnd.microsoft.portable-executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
