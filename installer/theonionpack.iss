@@ -2,7 +2,7 @@
 
 ; The Python version to be used is configured via an INI file.
 ; This ensures that compatibility can be tested ... to avoid side effects. 
-#define INIFile RemoveBackslash(SourcePath) + "\..\setup.ini"
+#define INIFile RemoveBackslash(SourcePath) + "\..\theonionpack\setup.ini"
 
 ; The license file
 #define LicenseFile RemoveBackslash(SourcePath) + "\..\LICENSE"
@@ -46,11 +46,35 @@ Source: "{tmp}\Python\*"; DestDir: "{app}\Python"; Flags: external recursesubdir
 Source: "{tmp}\Tor\*"; DestDir: "{app}\Tor"; Flags: external recursesubdirs
 Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafterinstall
 Source: "{# IndependenceFile}"; DestName: "INDEPENDENCE"; Flags: dontcopy
+; Source: "torrc-defaults"; Flags: dontcopy
+; Source: "{tmp}\torrc-defaults"; DestDir: "{app}\Tor\Data\"; Flags: external; BeforeInstall: CreateTorrcDefaults
+; local package of TheOnionBox
+Source: "{src}\{param:tob}"; DestDir: "{app}\Python"; DestName: "{param:tob}"; Flags: external; Check: FileExists(ExpandConstant('{src}\{param:tob}'))
+; local package of TheOnionPack
+Source: "{src}\{param:top}"; DestDir: "{app}\Python"; DestName: "{param:top}"; Flags: external; Check: FileExists(ExpandConstant('{src}\{param:top}'))
+
+[Dirs]
+Name: "{app}\Data"; Flags: uninsneveruninstall
+Name: "{app}\Data\torrc"; Flags: uninsneveruninstall
+
+[Icons]
+Name: "{app}\TheOnionPack"; Filename: "{app}\Python\Scripts\theonionpack.exe"; WorkingDir: "{app}"; Parameters: "--tor: ""{app}\Tor"""; Comment: "Launching The Onion Pack..."
 
 [Run]
 Filename: "{app}\Python\python.exe"; Parameters: "get-pip.py ""pip>18"" --no-warn-script-location"; Flags: runhidden; StatusMsg: "Preparing the Python runtime environment..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
-Filename: "{app}\Python\python.exe"; Parameters: "-m pip install --no-warn-script-location --upgrade theonionbox"; Flags: runhidden; StatusMsg: "Now installing The Onion Box. This may take some time, as a number of additional packages most probably have to be collected from the Internet..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
-Filename: "{app}\Python\Scripts\theonionbox.exe"; Flags: postinstall; Description: "Run The Onion Box..."
+; We pip theonionbox as individual package - despite it's as well defined as dependency for theonionpack.
+; This ensures that we can upgrade to the latest tob by simply re-running this (unmodified) installer.
+; We can pip from a local package using /tob!
+Filename: "{app}\Python\python.exe"; Parameters: "-m pip install --no-warn-script-location --upgrade ""{param:tob|theonionbox}"""; StatusMsg: "Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
+;The next line implements command line parameter /top (e.g. /top="theonionpack.tar.gz") to pip from a local package.
+;Default value pips from PyPi. Using path relative to installer directory!
+Filename: "{app}\Python\python.exe"; Parameters: "-m pip install --no-warn-script-location --upgrade ""{param:top|theonionpack}"""; StatusMsg: "Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
+Filename: "{app}\TheOnionPack.lnk"; WorkingDir: "{app}"; Flags: postinstall shellexec; Description: "Run The Onion Pack..."; Verb: "open"
+
+[InstallDelete]
+; To remove local pip packages
+Type: files; Name: "{app}\Python\{param:tob}"; Check: FileExists(ExpandConstant('{app}\Python\{param:tob}'))
+Type: files; Name: "{app}\Python\{param:top}"; Check: FileExists(ExpandConstant('{app}\Python\{param:top}'))
 
 [UninstallRun]
 Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe"" freeze > ""{app}\unins.req"""""; Flags: runhidden
@@ -58,7 +82,7 @@ Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe
 Filename: "{app}\Python\python.exe"; Parameters: "-m pip uninstall -y pip setuptools wheel"; Flags: runhidden
 
 [UninstallDelete]
-Type: files; Name: "{app}\uninst.req"
+Type: files; Name: "{app}\unins.req"
 Type: dirifempty; Name: "{app}\Python\Lib\site-packages"
 Type: dirifempty; Name: "{app}\Python\Lib"
 Type: dirifempty; Name: "{app}\Python\service"
@@ -68,10 +92,10 @@ Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system\windows"
 Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system"
 Type: dirifempty; Name: "{app}\Python\theonionbox\tob"
 Type: dirifempty; Name: "{app}\Python\theonionbox"
+Type: files; Name: "{app}\Tor\Data\torrc-defaults"
 
 
 [Code]
-
 var
   // Custom page showing progress while extracting the Tor Download Link
   TorDownloadLinkPage: TOutputProgressWizardPage;
@@ -387,4 +411,24 @@ begin
   // Initially not accepted
   IndependenceNotAcceptedRadio.Checked := True;
 
+end;
+
+procedure CreateTorrcDefaults();
+var
+  torrcFileName: string;
+  lines: array of string;
+  i: integer;
+begin
+  torrcFileName := 'torrc-defaults';
+  ExtractTemporaryFile(torrcFileName);
+  LoadStringsFromFile(ExpandConstant('{tmp}\' + torrcFileName), lines);
+  for i := 0 to GetArrayLength(lines) - 1  do begin
+    lines[i] := ExpandConstant(lines[i]);
+  end;
+  SaveStringsToFile(ExpandConstant('{tmp}\' + torrcFileName), lines, false);
+end;
+
+function CheckIfExists(const FileName: string): Boolean;
+begin
+  Result:=FileExists(CurrentFileName);
 end;
