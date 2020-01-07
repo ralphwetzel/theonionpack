@@ -1,5 +1,30 @@
 #include <.\IDP_1.5.1\idp.iss>
 
+; The Onion Pack
+; Definition file for the Inno Setup compiler.
+; Copyright 2019 - 2020 Ralph Wetzel
+; License MIT
+; https://www.github.com/ralphwetzel/theonionpack
+
+; =====
+; Supported COMPILER command line parameter:
+; "/Dtheonionpack=<path to theonionpack-xx.x.tar.gz>": To include a locally (at installer compilation time)
+;                                                      provided package of theonionpack into the installer.
+
+; =====
+; Supported INSTALLER command line parameters:
+; /tob="theonionbox-xx.x.tag.gz":   To install from a locally (at setup time) provided packache of The Onion Box
+;                                   (rather then pip'ing this from online).
+; /top="theonionpack-xx.x.tag.gz":  To install a locally (at setup time) provided packache of The Onion Pack
+;                                   (rather then using the one from this installer or pip'ing it from online).
+
+; All default INSTALLER commandline options are supported as well.
+; In case of trouble - to enable logging - use:
+; /LOG              Create a log file in the user's TEMP directory
+; /LOG="filename"   Create a log file at the specified path.
+; For further reference: http://www.jrsoftware.org/ishelp/index.php?topic=setupcmdline
+
+; =====
 ; The Python version to be used is configured via an INI file.
 ; This ensures that compatibility can be tested ... to avoid side effects. 
 #define INIFile RemoveBackslash(SourcePath) + "\..\theonionpack\setup.ini"
@@ -40,59 +65,165 @@ LicenseFile={# LicenseFile}
 WizardImageFile=compiler:WizModernImage-IS.bmp
 WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
 OutputBaseFilename=TheOnionPackInstaller
+DefaultGroupName=The Onion Pack
 
 [Files]
+; The statement of Independence; only used by the installer.
+Source: "{# IndependenceFile}"; DestName: "INDEPENDENCE"; Flags: dontcopy
+;
+; Those file were downloaded & unziped into the {tmp} directory.
+; Will be copied to {app} now. Inno keeps record of these files for later uninstall.
 Source: "{tmp}\Python\*"; DestDir: "{app}\Python"; Flags: external recursesubdirs
 Source: "{tmp}\Tor\*"; DestDir: "{app}\Tor"; Flags: external recursesubdirs
 Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafterinstall
-Source: "{# IndependenceFile}"; DestName: "INDEPENDENCE"; Flags: dontcopy
-; Source: "torrc-defaults"; Flags: dontcopy
-; Source: "{tmp}\torrc-defaults"; DestDir: "{app}\Tor\Data\"; Flags: external; BeforeInstall: CreateTorrcDefaults
-; local package of TheOnionBox
-Source: "{src}\{param:tob}"; DestDir: "{app}\Python"; DestName: "{param:tob}"; Flags: external; Check: FileExists(ExpandConstant('{src}\{param:tob}'))
-; local package of TheOnionPack
-Source: "{src}\{param:top}"; DestDir: "{app}\Python"; DestName: "{param:top}"; Flags: external; Check: FileExists(ExpandConstant('{src}\{param:top}'))
+;
+; The next line supports a CommandLine parameter for the Inno Setup COMPILER!
+; This can be invoked by "/Dtheonionpack=<path to theonionpack-xx.x.tar.gz>"
+; If defined, this package will become part of the installer.
+; If not, we'll pip the package - either local or from PyPI
+#ifdef theonionpack
+  #if FileExists(theonionpack)
+    #pragma message "TheOnionPack package @ " + theonionpack + " will be included in this installer."
+    Source: "{# theonionpack}"; DestDir: "{app}\Python"; DestName: "{# ExtractFileName(theonionpack)}"
+  #else
+    #pragma error "FileNotFound: TheOnionPack package @ " + theonionpack + "!"
+    #undef theonionpack
+  #endif
+#endif
+;
+; local package of TheOnionBox: CommandLine parameter to the INSTALLER
+; As the Inno compiler is changing the CurrentWorkingDirectory (due to whatever reason) while processing,
+; GetAbsSourcePath was added to work with the absolute path of a file - if the input is relative or absolute.
+; CheckIfExists as well calls GetAbsSourcePath to verify file existance.
+Source: "{code:GetAbsSourcePath|{param:tob}}"; \
+  DestDir: "{app}\Python"; \
+  DestName: "{code:ExtractFN|{param:tob}}"; \
+  Flags: external; \
+  Check: CheckIfExists(ExpandConstant('{param:tob}'));
+
+; local package of TheOnionPack: CommandLine parameter to the INSTALLER
+Source: "{code:GetAbsSourcePath|{param:tob}}"; \
+  DestDir: "{app}\Python"; \
+  DestName: "{code:ExtractFN|{param:top}}"; \
+  Flags: external; \
+  Check: CheckIfExists(ExpandConstant('{param:top}'));
 
 [Dirs]
+; Those two directories hold the data of the Tor relay (e.g. fingerprints).
+; We'll never touch them!
 Name: "{app}\Data"; Flags: uninsneveruninstall
 Name: "{app}\Data\torrc"; Flags: uninsneveruninstall
 
 [Icons]
-Name: "{app}\TheOnionPack"; Filename: "{app}\Python\Scripts\theonionpack.exe"; WorkingDir: "{app}"; Parameters: "--tor: ""{app}\Tor"""; Comment: "Launching The Onion Pack..."
+; This link gets the path to the Tor as a command line parameter.0
+Name: "{app}\TheOnionPack"; \
+  Filename: "{app}\Python\Scripts\theonionpack.exe"; \
+  WorkingDir: "{app}"; \
+  Parameters: "--tor ""{app}\Tor"""; \
+  Comment: "Launching The Onion Pack..."
+
+[CustomMessages]
+MSG_INSTALLING_TOP=Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet...
+MSG_FAILED_PIP=Unfortunately we were not able to orderly setup the Python environment.
+MSG_FAILED_TOB=We failed to install the necessary packages for The Onion Pack into our Python environment.
+MSG_FAILED_TOP=We failed to add The Onion Pack to the Python environment.
+MSG_FAILED_FINISHED=Setup failed to install The Onion Pack on your computer. You may run the uninstaller to remove now the obsolete remainders of this procedure. Sorry for this inconvenience!
 
 [Run]
-Filename: "{app}\Python\python.exe"; Parameters: "get-pip.py ""pip>18"" --no-warn-script-location"; Flags: runhidden; StatusMsg: "Preparing the Python runtime environment..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
+; Those runners check - parameter AfterInstall - if a dedicated file (that was part of the current step of installation) exists.
+; If not, ConfirmInstallation raises a MsgBox and sets the error flag - to abort installation.
+; From step two on, ConfirmNoInstallError (parameter Check) confirms that the error flag is down. If raised, this step is skipped.
+
+; We start by getting pip.
+Filename: "{app}\Python\python.exe"; \
+  Parameters: "get-pip.py ""pip>18"" --no-warn-script-location"; \
+  Flags: runhidden; \
+  StatusMsg: "Preparing the Python runtime environment..."; \
+  BeforeInstall: SetupRunConfig; \
+  AfterInstall: ConfirmInstallation('pip.exe', ExpandConstant('{cm:MSG_FAILED_PIP}'))
+;
 ; We pip theonionbox as individual package - despite it's as well defined as dependency for theonionpack.
 ; This ensures that we can upgrade to the latest tob by simply re-running this (unmodified) installer.
 ; We can pip from a local package using /tob!
-Filename: "{app}\Python\python.exe"; Parameters: "-m pip install --no-warn-script-location --upgrade ""{param:tob|theonionbox}"""; StatusMsg: "Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
+Filename: "{app}\Python\python.exe"; \
+  Parameters: "{code:create_pip_command|{param:tob|theonionbox}}"; \
+  Flags: runhidden; \
+  StatusMsg: {cm:MSG_INSTALLING_TOP}; \
+  Check: ConfirmNoInstallError; \
+  BeforeInstall: SetupRunConfig; \
+  AfterInstall: ConfirmInstallation('theonionbox.exe', ExpandConstant('{cm:MSG_FAILED_TOB}'))
+;
 ;The next line implements command line parameter /top (e.g. /top="theonionpack.tar.gz") to pip from a local package.
-;Default value pips from PyPi. Using path relative to installer directory!
-Filename: "{app}\Python\python.exe"; Parameters: "-m pip install --no-warn-script-location --upgrade ""{param:top|theonionpack}"""; StatusMsg: "Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet..."; BeforeInstall: SetupRunConfig; AfterInstall: SetMarqueeProgress(False)
-Filename: "{app}\TheOnionPack.lnk"; WorkingDir: "{app}"; Flags: postinstall shellexec; Description: "Run The Onion Pack..."; Verb: "open"
+;There are 2 scenarios - depending on the COMPILER command line parameter 'theonionpack'
+; #1) This installer carries a (default) package - thus #ifdef theonionpack:
+;       In this case, the local package will be installed, if it exists. If not, we'll install the default package.
+; #2) This installer carries NO (default) package (#ifndef theonionpack):
+;       Then we'll pip the local package, if it exists. If not, we'll try to pip from PyPI.
+#ifdef theonionpack
+  Filename: "{app}\Python\python.exe"; \
+    Parameters: "{code:create_pip_command|{param:top|{#theonionpack}}}"; \
+    Flags: runhidden; \
+    StatusMsg: {cm:MSG_INSTALLING_TOP}; \
+    Check: ConfirmNoInstallError; \
+    BeforeInstall: SetupRunConfig; \
+    AfterInstall: ConfirmInstallation('theonionbox.exe', ExpandConstant('{cm:MSG_FAILED_TOP}'))
+#else
+  Filename: "{app}\Python\python.exe"; \
+    Parameters: "{code:create_pip_command|{param:top|theonionpack}}"; \
+    Flags: runhidden; \
+    StatusMsg: {cm:MSG_INSTALLING_TOP}; \
+    Check: ConfirmNoInstallError; \
+    BeforeInstall: SetupRunConfig; \
+    AfterInstall: ConfirmInstallation('theonionpack.exe', ExpandConstant('{cm:MSG_FAILED_TOP}'))
+#endif
+
+; We offer 'Run The Onion Pack...' if there was no install error.
+Filename: "{app}\TheOnionPack.lnk"; \
+  WorkingDir: "{app}"; \
+  Flags: postinstall shellexec; \
+  Description: "Run The Onion Pack..."; \
+  Verb: "open"; \
+  Check: ConfirmNoInstallError;
+
+; Alternatively, we propose 'Run Uninstaller...' if an error occured!
+Filename: "{uninstallexe}"; \
+  Flags: postinstall shellexec; \
+  Description: "Run Uninstaller..."; \
+  Verb: "open"; \
+  Check: IfInstallationError;
+
 
 [InstallDelete]
+#ifdef theonionpack
+  ; Type: files; Name: "{app}\Python\{# ExtractFileName(theonionpack)}"
+#endif
+
 ; To remove local pip packages
-Type: files; Name: "{app}\Python\{param:tob}"; Check: FileExists(ExpandConstant('{app}\Python\{param:tob}'))
-Type: files; Name: "{app}\Python\{param:top}"; Check: FileExists(ExpandConstant('{app}\Python\{param:top}'))
+; Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:tob}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:tob}}'))
+; Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:top}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:top}}'))
 
 [UninstallRun]
+; To uninstall, we freeze the Python environment and write the names of the currently installed packages
+; into a dedicated file (unins.req).
 Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe"" freeze > ""{app}\unins.req"""""; Flags: runhidden
+; This done, we ask pip to remove all those packages.
 Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe"" uninstall -y -r ""{app}\unins.req"""""; Flags: runhidden
+; Finally pip may remove itself & it's friends.
 Filename: "{app}\Python\python.exe"; Parameters: "-m pip uninstall -y pip setuptools wheel"; Flags: runhidden
 
 [UninstallDelete]
+; Housekeeping...
 Type: files; Name: "{app}\unins.req"
 Type: dirifempty; Name: "{app}\Python\Lib\site-packages"
 Type: dirifempty; Name: "{app}\Python\Lib"
 Type: dirifempty; Name: "{app}\Python\service"
-Type: dirifempty; Name: "{app}\Python\support\osxtemp"
-Type: dirifempty; Name: "{app}\Python\support"
-Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system\windows"
-Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system"
-Type: dirifempty; Name: "{app}\Python\theonionbox\tob"
-Type: dirifempty; Name: "{app}\Python\theonionbox"
-Type: files; Name: "{app}\Tor\Data\torrc-defaults"
+; Type: dirifempty; Name: "{app}\Python\support\osxtemp"
+; Type: dirifempty; Name: "{app}\Python\support"
+; Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system\windows"
+; Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system"
+; Type: dirifempty; Name: "{app}\Python\theonionbox\tob"
+; Type: dirifempty; Name: "{app}\Python\theonionbox"
+;Type: files; Name: "{app}\Tor\Data\torrc-defaults"
 
 
 [Code]
@@ -105,20 +236,27 @@ var
   IndependenceAcceptedRadio: TRadioButton;
   IndependenceNotAcceptedRadio: TRadioButton;
 
+  // This is the application wide Error Flag.
+  error: Boolean;
+
 procedure CreateIndependencePage(); forward;
 procedure CheckIndependenceAccepted(Sender: TObject); forward;
 
 procedure InitializeWizard();
 begin
-  
+
+  // We are going to download Python from python.org...
+  // ... and get-pip.py from pypa,io.
+
   // the target file shall end with '.zip' ... to later support unzipping!
   idpAddFile('https://www.python.org/ftp/python/{#py}/python-{#py}-embed-win32.zip', ExpandConstant('{tmp}\python.zip'));
   idpAddFile('https://bootstrap.pypa.io/get-pip.py', ExpandConstant('{tmp}\get-pip.py'));
- 
+
+  // Yet we'll do this later - after the preparation stage.
   idpDownloadAfter(wpPreparing);
 
-  // Initialize the custom page
-  // The Tor Download Link (if found) will later (@ PrepareToInstall) be added
+  // Initialize the custom page to fetch the Tor Doenload link.
+  // This Link (if found) will later (@ PrepareToInstall) be added
   // to the files to be downloaded => becoming {tmp}\tor.zip
   TorDownloadLinkPage:= CreateOutputProgressPage('Extracting Download Link for current Tor version', '');
 
@@ -155,6 +293,8 @@ var
   ZipFile: Variant;
   TargetFolder: Variant;
 begin
+  Log('Unzipping ' + ZipPath + ' -> ' + TargetPath);
+
   Shell := CreateOleObject('Shell.Application');
 
   ZipFile := Shell.NameSpace(ZipPath);
@@ -184,6 +324,9 @@ var
   i, ii, iii: Integer;
   
 begin
+
+  Log('Trying to fetch Tor download link...');
+
   Result:= '';
 
   for i := 0 to GetArrayLength(html) - 1  do begin
@@ -222,6 +365,8 @@ begin
       linesplit.Free();
     end;
   end;
+
+  Log('Tor Download Link: ' + Result);
 end;
 
 
@@ -238,7 +383,7 @@ begin
       UnZip(ExpandConstant('{tmp}\python.zip'), ExpandConstant('{tmp}\Python'));
 
       // Patch Python ...
-      // This enables pip operations later!
+      // Mandatory to enable pip operations later!
       pth := ExpandConstant('{tmp}\Python\python{#pth}._pth');    
       SaveStringsToFile(pth, ['', '# by TheOnionPack', '.\Lib\site-packages', 'import site'], true);
       
@@ -248,17 +393,6 @@ begin
   end;
 end;
 
-{
-function NextButtonClick(CurPageID: Integer): Boolean;
-begin
-  LOG('NextButtonClick')
-  Result:= True;
-  if CurPageID = wpLicense then begin
-    // Create the page to acknowledge the Statement of Independence
-    CreateIndependencePage();
-  end;
-end;
-}
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
@@ -269,6 +403,13 @@ begin
     CheckIndependenceAccepted(nil);
   end;
 
+  // Customize FinishedPage in case of error.
+  if CurPageID = wpFinished then begin
+    if error = True then begin
+      WizardForm.FinishedHeadingLabel.Caption := 'The Onion Pack Setup Error';
+      WizardForm.FinishedLabel.Caption := ExpandConstant('{cm:MSG_FAILED_FINISHED}');
+    end;  
+  end;
 end;
 
 
@@ -284,8 +425,14 @@ begin
   // This serves as well to verify that an internet connection is present.
   
   TorDownloadLinkPage.SetText('Fetching Tor Download Webpage...', '');
-  TorDownloadLinkPage.SetProgress(0, 1);
+  TorDownloadLinkPage.ProgressBar.Style := npbstNormal;
+  TorDownloadLinkPage.SetProgress(1, 2);
   TorDownloadLinkPage.Show;
+  
+  // Give the page time to setup nicely
+  // Note: This does not work! :(
+  Sleep(500);
+
   try
     // Download the website
     check := idpDownloadFile('{#tor}', ExpandConstant('{tmp}\tor.check'));      
@@ -300,7 +447,8 @@ begin
     // Now extract the link
     TorDownloadLinkPage.SetText('Extracting Download Link...', '');
     LoadStringsFromFile(ExpandConstant('{tmp}\tor.check'), html);
-    TorDownloadLinkPage.SetProgress(1, GetArrayLength(html));
+    TorDownloadLinkPage.ProgressBar.Style := npbstNormal;
+    TorDownloadLinkPage.SetProgress(2, GetArrayLength(html)+1);
     link := ExtractDownloadLink(html, TorDownloadLinkPage);
     // This is a very (very very) simplistic check that we found it.
     if Length(link) < 3 then begin
@@ -356,10 +504,9 @@ end;
 // https://stackoverflow.com/questions/34592002/how-to-create-two-licensefile-pages-in-inno-setup
 procedure CheckIndependenceAccepted(Sender: TObject);
 begin
-  { Update Next button when user (un)accepts the license }
+  // Update Next button when user (un)accepts the license
   WizardForm.NextButton.Enabled := IndependenceAcceptedRadio.Checked;
 end;
-
 
 function CloneLicenseRadioButton(Source: TRadioButton): TRadioButton;
 begin
@@ -413,22 +560,74 @@ begin
 
 end;
 
-procedure CreateTorrcDefaults();
+// To get the absolute path for any source file
+function GetAbsSourcePath(const path: string): string;
 var
-  torrcFileName: string;
-  lines: array of string;
-  i: integer;
+  abs_path: string;
+
 begin
-  torrcFileName := 'torrc-defaults';
-  ExtractTemporaryFile(torrcFileName);
-  LoadStringsFromFile(ExpandConstant('{tmp}\' + torrcFileName), lines);
-  for i := 0 to GetArrayLength(lines) - 1  do begin
-    lines[i] := ExpandConstant(lines[i]);
+  // check if path is absolute
+  abs_path := ExpandFileName(path);
+  if abs_path = path then begin
+    Result := path;
+  end else begin
+    // if not: generate the absolute one.
+    Result := ExpandConstant('{src}\' + path);
   end;
-  SaveStringsToFile(ExpandConstant('{tmp}\' + torrcFileName), lines, false);
+  Log('AbsPath for ' + path + ' -> ' + Result);
 end;
 
+
 function CheckIfExists(const FileName: string): Boolean;
+var
+  abs_path: string;
 begin
-  Result:=FileExists(CurrentFileName);
+  abs_path := GetAbsSourcePath(FileName);
+  Result:=FileExists(abs_path);
+  Log('Does ' + FileName + ' exist? -> ' + IntToStr(Integer(Result)));
+end;
+
+function create_pip_command(const path: string): string;
+var
+   r: string;
+begin
+    r := '-m pip install --no-warn-script-location --upgrade ""';
+    r := r + ExtractFileName(path);
+    Result := r + '""';
+    Log('pip command: ' + Result);
+end;
+
+function ExtractFN(const path: string): string;
+begin
+  Result:= ExtractFileName(path);
+  Log('FN of ' + path + ' -> ' + Result);
+end;
+
+// verify that filename exists. If not, emit MsgBox & set Error Flag.
+procedure ConfirmInstallation(filename: string; msg: string);
+begin
+  if FileExists(ExpandConstant('{app}\Python\Scripts\' + filename)) = False then begin
+      SetMarqueeProgress(False);
+      TaskDialogMsgBox('Error',
+                       msg,   
+                       mbCriticalError,
+                       MB_OK, [], 0);
+      error := True;
+      Log(filename + ' does NOT exist!');
+  end else begin
+      Log(filename + ' exist!');
+  end;
+end;
+
+// Error Flag verification
+function ConfirmNoInstallError(): Boolean;
+begin
+  Result := (error = False);
+  Log('NoInstallError: ' + IntToStr(Integer(Result)));
+end;
+
+function IfInstallationError(): Boolean;
+begin
+  Result := (error = True);
+  Log('InstallationError: ' + IntToStr(Integer(Result)));
 end;
