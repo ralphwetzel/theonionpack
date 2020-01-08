@@ -261,6 +261,7 @@ package_data = {
     #                 ]
     'theonionpack': ['icons/top16.ico'
                      , 'setup.ini'
+                     , '../README.md'
                      ]
 }
 
@@ -341,14 +342,15 @@ setup(
             'theonionpack = theonionpack.__main__:main']
     },
     install_requires=[
-        'theonionbox==20.1a2',
+        'theonionbox>=20.1',
         'pystray',
-        'shelljob'
+        'shelljob',
+        'filelock'
     ],
     long_description_content_type='text/x-rst; charset=UTF-8',
     classifiers=[
         # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: Web Environment',
         'Framework :: Bottle',
