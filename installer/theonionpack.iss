@@ -59,7 +59,7 @@ PrivilegesRequired=lowest
 ; There's a 'bug' (better an annoyance) in Inno Script Studio that limits
 ; ExtraDiskSpaceRequired to 10000000 in the dialog window.
 ; It yet doesn't overwrite the value here - as long as we don't touch it. 
-ExtraDiskSpaceRequired=83693568
+ExtraDiskSpaceRequired=87439216
 MinVersion=0,6.0
 LicenseFile={# LicenseFile}
 WizardImageFile=compiler:WizModernImage-IS.bmp
@@ -166,7 +166,7 @@ Filename: "{app}\Python\python.exe"; \
     StatusMsg: {cm:MSG_INSTALLING_TOP}; \
     Check: ConfirmNoInstallError; \
     BeforeInstall: SetupRunConfig; \
-    AfterInstall: ConfirmInstallation('theonionbox.exe', ExpandConstant('{cm:MSG_FAILED_TOP}'))
+    AfterInstall: ConfirmInstallation('theonionpack.exe', ExpandConstant('{cm:MSG_FAILED_TOP}'))
 #else
   Filename: "{app}\Python\python.exe"; \
     Parameters: "{code:create_pip_command|{param:top|theonionpack}}"; \
@@ -242,6 +242,11 @@ var
 procedure CreateIndependencePage(); forward;
 procedure CheckIndependenceAccepted(Sender: TObject); forward;
 
+procedure out(message: string);
+begin
+  Log('[TOP] ' + message;
+end;
+
 procedure InitializeWizard();
 begin
 
@@ -293,7 +298,7 @@ var
   ZipFile: Variant;
   TargetFolder: Variant;
 begin
-  Log('Unzipping ' + ZipPath + ' -> ' + TargetPath);
+  out('Unzipping ' + ZipPath + ' -> ' + TargetPath);
 
   Shell := CreateOleObject('Shell.Application');
 
@@ -325,7 +330,7 @@ var
   
 begin
 
-  Log('Trying to fetch Tor download link...');
+  out('Trying to fetch Tor download link...');
 
   Result:= '';
 
@@ -366,7 +371,7 @@ begin
     end;
   end;
 
-  Log('Tor Download Link: ' + Result);
+  out('Tor Download Link: ' + Result);
 end;
 
 
@@ -574,7 +579,7 @@ begin
     // if not: generate the absolute one.
     Result := ExpandConstant('{src}\' + path);
   end;
-  Log('AbsPath for ' + path + ' -> ' + Result);
+  out('AbsPath for ' + path + ' -> ' + Result);
 end;
 
 
@@ -584,7 +589,7 @@ var
 begin
   abs_path := GetAbsSourcePath(FileName);
   Result:=FileExists(abs_path);
-  Log('Does ' + FileName + ' exist? -> ' + IntToStr(Integer(Result)));
+  out('Does ' + FileName + ' exist? -> ' + IntToStr(Integer(Result)));
 end;
 
 function create_pip_command(const path: string): string;
@@ -594,13 +599,13 @@ begin
     r := '-m pip install --no-warn-script-location --upgrade ""';
     r := r + ExtractFileName(path);
     Result := r + '""';
-    Log('pip command: ' + Result);
+    out('pip command: ' + Result);
 end;
 
 function ExtractFN(const path: string): string;
 begin
   Result:= ExtractFileName(path);
-  Log('FN of ' + path + ' -> ' + Result);
+  out('FN of ' + path + ' -> ' + Result);
 end;
 
 // verify that filename exists. If not, emit MsgBox & set Error Flag.
@@ -613,9 +618,9 @@ begin
                        mbCriticalError,
                        MB_OK, [], 0);
       error := True;
-      Log(filename + ' does NOT exist!');
+      out(filename + ' does NOT exist!');
   end else begin
-      Log(filename + ' exist!');
+      out(filename + ' exist!');
   end;
 end;
 
@@ -623,11 +628,11 @@ end;
 function ConfirmNoInstallError(): Boolean;
 begin
   Result := (error = False);
-  Log('NoInstallError: ' + IntToStr(Integer(Result)));
+  out('NoInstallError: ' + IntToStr(Integer(Result)));
 end;
 
 function IfInstallationError(): Boolean;
 begin
   Result := (error = True);
-  Log('InstallationError: ' + IntToStr(Integer(Result)));
+  out('InstallationError: ' + IntToStr(Integer(Result)));
 end;
