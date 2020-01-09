@@ -10,6 +10,8 @@
 ; Supported COMPILER command line parameter:
 ; "/Dtheonionpack=<path to theonionpack-xx.x.tar.gz>": To include a locally (at installer compilation time)
 ;                                                      provided package of theonionpack into the installer.
+;                                                      The installer will only include a package with matching
+;                                                      version number & adequate labeling!
 
 ; =====
 ; Supported INSTALLER command line parameters:
@@ -43,12 +45,15 @@
 ; Tor Download page
 #define tor ReadIni(INIFile, "tor", "download")
 
+; Version
+#define __version__ ReadIni(INIFile, "theonionpack", "version")
+
 [ThirdParty]
 UseRelativePaths=True
 
 [Setup]
 AppName={# ReadIni(INIFile, "theonionpack", "title")} 
-AppVersion={# ReadIni(INIFile, "theonionpack", "version")}
+AppVersion={# __version__ }
 AppCopyright={# ReadIni(INIFile, "theonionpack", "copyright")}
 AppId={{9CF06087-6B33-44B0-B9EE-24A3EE0678C9}
 UsePreviousAppDir=No
@@ -82,11 +87,13 @@ Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafter
 ; If defined, this package will become part of the installer.
 ; If not, we'll pip the package - either local or from PyPI
 #ifdef theonionpack
-  #if FileExists(theonionpack)
-    #pragma message "TheOnionPack package @ " + theonionpack + " will be included in this installer."
+  #define top_file ExtractFilePath(theonionpack) + 'theonionpack-' + __version__ + '.tar.gz'
+  #if FileExists(top_file)
+    #define theonionpack top_file
+    #pragma message "TheOnionPack package @ '" + theonionpack + "' will be included in this installer."
     Source: "{# theonionpack}"; DestDir: "{app}\Python"; DestName: "{# ExtractFileName(theonionpack)}"
   #else
-    #pragma error "FileNotFound: TheOnionPack package @ " + theonionpack + "!"
+    #pragma error "FileNotFound: TheOnionPack package @ '" + theonionpack + "'!"
     #undef theonionpack
   #endif
 #endif
@@ -242,9 +249,9 @@ var
 procedure CreateIndependencePage(); forward;
 procedure CheckIndependenceAccepted(Sender: TObject); forward;
 
-procedure out(message: string);
+procedure debug(message: string);
 begin
-  Log('[TOP] ' + message;
+  Log('[TOP] ' + message);
 end;
 
 procedure InitializeWizard();
@@ -298,7 +305,7 @@ var
   ZipFile: Variant;
   TargetFolder: Variant;
 begin
-  out('Unzipping ' + ZipPath + ' -> ' + TargetPath);
+  debug('Unzipping ' + ZipPath + ' -> ' + TargetPath);
 
   Shell := CreateOleObject('Shell.Application');
 
@@ -330,7 +337,7 @@ var
   
 begin
 
-  out('Trying to fetch Tor download link...');
+  debug('Trying to fetch Tor download link...');
 
   Result:= '';
 
@@ -371,7 +378,7 @@ begin
     end;
   end;
 
-  out('Tor Download Link: ' + Result);
+  debug('Tor Download Link: ' + Result);
 end;
 
 
@@ -579,7 +586,7 @@ begin
     // if not: generate the absolute one.
     Result := ExpandConstant('{src}\' + path);
   end;
-  out('AbsPath for ' + path + ' -> ' + Result);
+  debug('AbsPath for ' + path + ' -> ' + Result);
 end;
 
 
@@ -589,7 +596,7 @@ var
 begin
   abs_path := GetAbsSourcePath(FileName);
   Result:=FileExists(abs_path);
-  out('Does ' + FileName + ' exist? -> ' + IntToStr(Integer(Result)));
+  debug('Does ' + FileName + ' exist? -> ' + IntToStr(Integer(Result)));
 end;
 
 function create_pip_command(const path: string): string;
@@ -599,13 +606,13 @@ begin
     r := '-m pip install --no-warn-script-location --upgrade ""';
     r := r + ExtractFileName(path);
     Result := r + '""';
-    out('pip command: ' + Result);
+    debug('pip command: ' + Result);
 end;
 
 function ExtractFN(const path: string): string;
 begin
   Result:= ExtractFileName(path);
-  out('FN of ' + path + ' -> ' + Result);
+  debug('FN of ' + path + ' -> ' + Result);
 end;
 
 // verify that filename exists. If not, emit MsgBox & set Error Flag.
@@ -618,9 +625,9 @@ begin
                        mbCriticalError,
                        MB_OK, [], 0);
       error := True;
-      out(filename + ' does NOT exist!');
+      debug(filename + ' does NOT exist!');
   end else begin
-      out(filename + ' exist!');
+      debug(filename + ' exist!');
   end;
 end;
 
@@ -628,11 +635,11 @@ end;
 function ConfirmNoInstallError(): Boolean;
 begin
   Result := (error = False);
-  out('NoInstallError: ' + IntToStr(Integer(Result)));
+  debug('NoInstallError: ' + IntToStr(Integer(Result)));
 end;
 
 function IfInstallationError(): Boolean;
 begin
   Result := (error = True);
-  out('InstallationError: ' + IntToStr(Integer(Result)));
+  debug('InstallationError: ' + IntToStr(Integer(Result)));
 end;
