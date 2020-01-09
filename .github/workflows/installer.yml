@@ -12,8 +12,16 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+        architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+
+    - name: Run setup.py to create sdist
+      run: python setup.py sdist --dist-dir installer
+
     - name: Run Inno Compiler
-      run: iscc "installer\theonionpack.iss"
+      run: iscc "installer\theonionpack.iss" "/Dtheonionpack=.\"
     
     - name: Upload files to a GitHub release
       uses: svenstaro/upload-release-action@1.0.1
