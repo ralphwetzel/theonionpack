@@ -21,7 +21,7 @@ jobs:
       run: python setup.py sdist --dist-dir installer
 
     - name: Run Inno Compiler
-      run: iscc "installer\theonionpack.iss" "/Dtheonionpack=.\"
+      run: iscc "installer\theonionpack.iss" "/Dtheonionpack=."
     
     - name: Upload files to a GitHub release
       uses: svenstaro/upload-release-action@1.0.1
