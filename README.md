@@ -38,23 +38,23 @@ This icon provides a context menu ... to monitor your Tor relay and to control i
 |---|---|
 | **Monitor...** | Open The Onion Box, the dashboard to monitor your relay. Default (right click) action.
 | Relay Control |
-| Edit configuration file... | Opens *torrc*, the configuration file of your relay. You may edit & save this file to change the setup of your Tor Relay.
-| Show logfile... | Show the log messages of your Tor Relay. This might be useful in case of trouble!
+| Edit configuration file... | Opens *torrc*, the configuration file of your relay. You may edit & save this file to change the setup of your Tor relay.
+| Show logfile... | Show the log messages of your Tor relay. This might be useful in case of trouble!
 | Reload relay configuration...| If you've edited *torrc* to modify the configuration definition of your relay, you need to reload this configuration into the relay.
 | Stop! | Terminate The Onion Pack
 
 ## First Steps
-By intension the Tor instance **initially** installed by The Onion Pack is **not operating in Relay mode** - yet as a Tor client.
+By intension the Tor instance **initially** installed by The Onion Pack is **not operating in Relay mode** - yet as a Tor client.  
+If you deliberately decide to establish a relay, edit the configuration file: **Tray menu > Relay Control > Edit configuration file...**  
+This will open an editor window - showing an empty file.
 
-If you then decide to establish a relay, edit the configuration file: **Tray menu > Relay Control > Edit configuration file...**
-
-This will open an editor window - showing an empty file. Prerequisite to become a relay is the definition of an *ORPort*:
+Prerequisite to become a relay is the definition of an [*ORPort*](https://2019.www.torproject.org/docs/tor-manual.html.en#ORPort) :
 ```
 ORPort 9001
 ```
 > Remember to define the port number in accordance to your port forwarding settings established at your router!
 
-Additionally you should at least give a name to your relay and define the *ContactInfo* parameter.
+Additionally you should at least give a name to your relay and define the [*ContactInfo*](https://2019.www.torproject.org/docs/tor-manual.html.en#ContactInfo) parameter.
 
 ```
 ORPort 9001
@@ -77,13 +77,7 @@ You may & should define further configuration parameters ... and if done, save t
 
 To enable this configuration, you need to tell your Tor node to reload it's configuration file: **Tray menu > Relay Control > Reload relay configuration**
 
-Afterwards you may either
-
-* check the logfile of your relay: **Tray menu > Relay control > Show logfile...**
-
-or
-
-* open the dashboard to monitor your relay: **Tray menu > Monitor...**
+Afterwards you may either check the logfile of your relay ( **Tray menu > Relay control > Show logfile...** ) or open the dashboard to monitor your relay: **Tray menu > Monitor...**
 
 Have fun!
 
