@@ -45,16 +45,24 @@
 ; Tor Download page
 #define tor ReadIni(INIFile, "tor", "download")
 
+; Name / Title
+#define __title__ ReadIni(INIFile, "theonionpack", "title")
 ; Version
 #define __version__ ReadIni(INIFile, "theonionpack", "version")
+; Description
+#define __description__ ReadIni(INIFile, "theonionpack", "description")
+; Copyright
+#define __copyright__ ReadIni(INIFile, "theonionpack", "copyright")
+
 
 [ThirdParty]
 UseRelativePaths=True
 
+
 [Setup]
-AppName={# ReadIni(INIFile, "theonionpack", "title")} 
-AppVersion={# __version__ }
-AppCopyright={# ReadIni(INIFile, "theonionpack", "copyright")}
+AppName={# __title__ } 
+AppVersion={# __version__}
+AppCopyright={# __copyright__ }
 AppId={{9CF06087-6B33-44B0-B9EE-24A3EE0678C9}
 UsePreviousAppDir=No
 DefaultDirName=TheOnionPack
@@ -71,6 +79,14 @@ WizardImageFile=compiler:WizModernImage-IS.bmp
 WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
 OutputBaseFilename=TheOnionPackInstaller
 DefaultGroupName=The Onion Pack
+AppPublisher=Ralph Wetzel
+AppComments={# __description__}
+VersionInfoVersion={# __version__}
+VersionInfoDescription={# __description__}
+VersionInfoProductName={# __title__}
+VersionInfoCopyright={# __copyright__}
+DisableProgramGroupPage=yes
+
 
 [Files]
 ; The statement of Independence; only used by the installer.
@@ -103,17 +119,21 @@ Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafter
 ; GetAbsSourcePath was added to work with the absolute path of a file - if the input is relative or absolute.
 ; CheckIfExists as well calls GetAbsSourcePath to verify file existance.
 Source: "{code:GetAbsSourcePath|{param:tob}}"; \
-  DestDir: "{app}\Python"; \
-  DestName: "{code:ExtractFN|{param:tob}}"; \
-  Flags: external; \
-  Check: CheckIfExists(ExpandConstant('{param:tob}'));
+    DestDir: "{app}\Python"; \
+    DestName: "{code:ExtractFN|{param:tob}}"; \
+    Flags: external; \
+    Check: CheckIfExists(ExpandConstant('{param:tob}'))
 
 ; local package of TheOnionPack: CommandLine parameter to the INSTALLER
 Source: "{code:GetAbsSourcePath|{param:tob}}"; \
-  DestDir: "{app}\Python"; \
-  DestName: "{code:ExtractFN|{param:top}}"; \
-  Flags: external; \
-  Check: CheckIfExists(ExpandConstant('{param:top}'));
+    DestDir: "{app}\Python"; \
+    DestName: "{code:ExtractFN|{param:top}}"; \
+    Flags: external; \
+    Check: CheckIfExists(ExpandConstant('{param:top}'))
+
+; An icon ...
+; Source: "..\theonionpack\icons\top256.ico"; DestDir: "{app}"; Attribs: hidden
+
 
 [Dirs]
 ; Those two directories hold the data of the Tor relay (e.g. fingerprints).
@@ -121,13 +141,27 @@ Source: "{code:GetAbsSourcePath|{param:tob}}"; \
 Name: "{app}\Data"; Flags: uninsneveruninstall
 Name: "{app}\Data\torrc"; Flags: uninsneveruninstall
 
+
 [Icons]
-; This link gets the path to the Tor as a command line parameter.0
-Name: "{app}\TheOnionPack"; \
-  Filename: "{app}\Python\Scripts\theonionpack.exe"; \
-  WorkingDir: "{app}"; \
-  Parameters: "--tor ""{app}\Tor"""; \
-  Comment: "Launching The Onion Pack..."
+; This link gets the path to the Tor as a command line parameter.
+Name: "{app}\The Onion Pack"; \
+    Filename: "{app}\Python\Scripts\theonionpack.exe"; \
+    WorkingDir: "{app}"; \
+    Flags: runminimized; \
+    IconFilename: "{app}\top256.ico"; \
+    Parameters: "--tor ""{app}\Tor"""; \
+    Comment: "Launching The Onion Pack..."
+
+; This autostart link gets the path to the Tor as a command line parameter.
+Name: "{userstartup}\The Onion Pack"; \
+    Filename: "{app}\Python\Scripts\theonionpack.exe"; \
+    WorkingDir: "{app}"; \
+    Flags: runminimized; \
+    IconFilename: "{app}\top256.ico"; \
+    Parameters: "--tor ""{app}\Tor"""; \
+    Comment: "Launching The Onion Pack..."; \
+    Tasks: startup
+
 
 [CustomMessages]
 MSG_INSTALLING_TOP=Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet...
@@ -135,6 +169,7 @@ MSG_FAILED_PIP=Unfortunately we were not able to orderly setup the Python enviro
 MSG_FAILED_TOB=We failed to install the necessary packages for The Onion Pack into our Python environment.
 MSG_FAILED_TOP=We failed to add The Onion Pack to the Python environment.
 MSG_FAILED_FINISHED=Setup failed to install The Onion Pack on your computer. You may run the uninstaller to remove now the obsolete remainders of this procedure. Sorry for this inconvenience!
+
 
 [Run]
 ; Those runners check - parameter AfterInstall - if a dedicated file (that was part of the current step of installation) exists.
@@ -185,7 +220,7 @@ Filename: "{app}\Python\python.exe"; \
 #endif
 
 ; We offer 'Run The Onion Pack...' if there was no install error.
-Filename: "{app}\TheOnionPack.lnk"; \
+Filename: "{app}\The Onion Pack.lnk"; \
   WorkingDir: "{app}"; \
   Flags: postinstall shellexec; \
   Description: "Run The Onion Pack..."; \
@@ -202,12 +237,13 @@ Filename: "{uninstallexe}"; \
 
 [InstallDelete]
 #ifdef theonionpack
-  ; Type: files; Name: "{app}\Python\{# ExtractFileName(theonionpack)}"
+  Type: files; Name: "{app}\Python\{# ExtractFileName(theonionpack)}"
 #endif
 
 ; To remove local pip packages
-; Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:tob}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:tob}}'))
-; Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:top}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:top}}'))
+Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:tob}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:tob}}'))
+Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:top}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:top}}'))
+
 
 [UninstallRun]
 ; To uninstall, we freeze the Python environment and write the names of the currently installed packages
@@ -217,6 +253,7 @@ Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe
 Filename: "{cmd}"; Parameters: """{cmd}"" /S /C """"{app}\Python\Scripts\pip.exe"" uninstall -y -r ""{app}\unins.req"""""; Flags: runhidden
 ; Finally pip may remove itself & it's friends.
 Filename: "{app}\Python\python.exe"; Parameters: "-m pip uninstall -y pip setuptools wheel"; Flags: runhidden
+
 
 [UninstallDelete]
 ; Housekeeping...
@@ -231,6 +268,10 @@ Type: dirifempty; Name: "{app}\Python\service"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox\tob"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox"
 ;Type: files; Name: "{app}\Tor\Data\torrc-defaults"
+
+
+[Tasks]
+Name: "startup"; Description: "Lauch The Onion Pack with user login"; GroupDescription: "Autostart"
 
 
 [Code]
