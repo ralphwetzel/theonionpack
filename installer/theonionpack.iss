@@ -141,14 +141,12 @@ Source: "{code:GetAbsSourcePath|{param:tob}}"; \
 Name: "{app}\Data"; Flags: uninsneveruninstall
 Name: "{app}\Data\torrc"; Flags: uninsneveruninstall
 
-
 [Icons]
 ; This link gets the path to the Tor as a command line parameter.
 Name: "{app}\The Onion Pack"; \
     Filename: "{app}\Python\Scripts\theonionpack.exe"; \
     WorkingDir: "{app}"; \
     Flags: runminimized; \
-    IconFilename: "{app}\top256.ico"; \
     Parameters: "--tor ""{app}\Tor"""; \
     Comment: "Launching The Onion Pack..."
 
@@ -157,11 +155,9 @@ Name: "{userstartup}\The Onion Pack"; \
     Filename: "{app}\Python\Scripts\theonionpack.exe"; \
     WorkingDir: "{app}"; \
     Flags: runminimized; \
-    IconFilename: "{app}\top256.ico"; \
     Parameters: "--tor ""{app}\Tor"""; \
     Comment: "Launching The Onion Pack..."; \
     Tasks: startup
-
 
 [CustomMessages]
 MSG_INSTALLING_TOP=Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet...
@@ -269,10 +265,8 @@ Type: dirifempty; Name: "{app}\Python\service"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox"
 ;Type: files; Name: "{app}\Tor\Data\torrc-defaults"
 
-
 [Tasks]
-Name: "startup"; Description: "Lauch The Onion Pack with user login"; GroupDescription: "Autostart"
-
+Name: "startup"; Description: "Start The Onion Pack when you start Windows"; GroupDescription: "Autostart"
 
 [Code]
 var
