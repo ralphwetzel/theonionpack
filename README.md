@@ -9,8 +9,8 @@ This installation program is going to perform a number of tasks:
 
 * Locate, download & install the latest Tor *Windows Expert Bundle* from the official sources at [torproject.org](https://www.torproject.org/download/tor/).
 * Download & install a version of *Embeddable Python* from the official sources at [python.org](https://www.python.org/downloads/windows/).
-* Setup a Python environment.
-* Download & install [The Onion Box](www.theonionbox.com) (Dashboard to monitor Tor node operations) from the [Python Package Index](https://pypi.org/project/theonionbox/) .
+* Setup an appropriate Python environment.
+* Download & install [The Onion Box](http://www.theonionbox.com) (Dashboard to monitor Tor node operations) from the [Python Package Index](https://pypi.org/project/theonionbox/) .
 
 and finally
 
