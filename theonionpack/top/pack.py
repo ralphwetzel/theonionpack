@@ -7,6 +7,7 @@ import sys
 import tempfile
 from time import sleep
 import threading
+import uuid
 import webbrowser
 import winreg
 
@@ -38,7 +39,7 @@ class Pack():
         self.status = 0
 
         # Prepare Tor
-        self.password = 'test'
+        self.password = uuid.uuid4().hex
         self.relay = tor.Tor(self.config['tor'], self.config['data'])
 
         # torrc
@@ -165,10 +166,10 @@ class Pack():
 
         # cleanup is being performed in self.run()
 
-    def get_tor_messages(self):
-        while True:
-            self.relay.collect_messages()
-            sleep(5)
+    # def get_tor_messages(self):
+    #     while True:
+    #         self.relay.collect_messages()
+    #         sleep(5)
 
     def on_show_messages(self, icon, item):
         fd, name = tempfile.mkstemp(prefix="Tor_", suffix='.html', text=True)
