@@ -83,7 +83,7 @@ VersionInfoDescription={# __description__}
 VersionInfoProductName={# __title__}
 VersionInfoCopyright={# __copyright__}
 DisableProgramGroupPage=yes
-
+ArchitecturesInstallIn64BitMode=x64
 
 [Files]
 ; The statement of Independence; only used by the installer.
@@ -296,7 +296,13 @@ begin
   // ... and get-pip.py from pypa,io.
 
   // the target file shall end with '.zip' ... to later support unzipping!
-  idpAddFile('https://www.python.org/ftp/python/{#py}/python-{#py}-embed-win32.zip', ExpandConstant('{tmp}\python.zip'));
+  if Is64BitInstallMode() = True then begin
+    // Let's try to use the 64bit version of Python ... if running on Win64
+    debug('We are going to install the 64bit version of Python.');
+    idpAddFile('https://www.python.org/ftp/python/{#py}/python-{#py}-embed-amd64.zip', ExpandConstant('{tmp}\python.zip'));
+  end else begin
+    idpAddFile('https://www.python.org/ftp/python/{#py}/python-{#py}-embed-win32.zip', ExpandConstant('{tmp}\python.zip'));
+  end;
   idpAddFile('https://bootstrap.pypa.io/get-pip.py', ExpandConstant('{tmp}\get-pip.py'));
 
   // Yet we'll do this later - after the preparation stage.
@@ -463,8 +469,9 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   html: array of string;
-  tor, link: string;
+  tor, link, link64: string;
   check: Boolean;
+  size: Int64;
 
 begin
 
@@ -508,7 +515,19 @@ begin
       // https://stackoverflow.com/questions/38934332/how-can-i-make-a-button-or-a-text-in-inno-setup-that-opens-web-page-when-clicked 
       Exit;
     end else begin
-      // We have a link! Let's append it to the download queue:
+      // Check if we're in 64bit mode.
+      if Is64BitInstallMode() = True then begin
+        // Let's try to use the 64bit version of Tor then
+        link64 := link;
+        if StringChangeEx(link64, 'win32', 'win64', True) > 0 then begin
+          // Check if file exists...
+          if idpGetFileSize('https://www.torproject.org' + link64, size) then begin
+            link := link64;
+            debug('We are going to install the 64bit version of Tor @ ' + link);
+          end;
+        end;
+      end;      
+      // We finally have a link! Let's append it to the download queue:
       idpAddFile('https://www.torproject.org' + link, ExpandConstant('{tmp}\tor.zip'));
 
     end;
