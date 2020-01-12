@@ -43,7 +43,7 @@ class Pack():
         self.relay = tor.Tor(self.config['tor'], self.config['data'])
 
         # torrc
-        torrc = pathlib.Path(config['data']) / 'torrc/torrc'
+        torrc = pathlib.Path(config['data']) / 'torrc' / 'torrc'
         self.torrc = torrc.resolve()
 
         # The Onion Box
@@ -185,6 +185,10 @@ class Pack():
             with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r'{}\shell\open\command'.format(class_root)) as key:
                 command = winreg.QueryValueEx(key, '')[0]
                 return command.split(' ')[0]
+
+        if not self.torrc.exists():
+            self.torrc.parent.mkdir(parents=True, exist_ok=True)
+            self.torrc.touch()
 
         path = get_default_windows_app('.txt')
         subprocess.Popen([os.path.expandvars(path), str(self.torrc)])
