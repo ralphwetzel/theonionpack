@@ -15,7 +15,7 @@ This installation program is going to perform a number of tasks:
 * Locate, download & install the latest Tor *Windows Expert Bundle* from the official sources at [torproject.org](https://www.torproject.org/download/tor/).
 * Download & install a version of *Embeddable Python* from the official sources at [python.org](https://www.python.org/downloads/windows/).
 * Setup an appropriate Python environment.
-* Download & install [The Onion Box](http://www.theonionbox.com) (Dashboard to monitor Tor node operations) from the [Python Package Index](https://pypi.org/project/theonionbox/) .
+* Download & install [The Onion Box](http://www.theonionbox.com) (Dashboard to monitor Tor node operations) from the [Python Package Index](https://pypi.org/project/theonionbox/).
 
 and finally
 
@@ -49,7 +49,7 @@ This icon provides a context menu ... to monitor your Tor relay and to control i
 | Stop! | Terminate The Onion Pack
 
 ## First Steps
-By intension the Tor instance **initially** installed by The Onion Pack is **not operating in Relay mode** - yet as a Tor client.  
+By intension the Tor instance **initially** installed by The Onion Pack is **not operating in relay mode** - yet as a Tor client.  
 If you deliberately decide to establish a relay, edit the configuration file: **Tray menu > Relay Control > Edit configuration file...**  
 This will open an editor window - showing an empty file.
 
@@ -76,7 +76,7 @@ ContactInfo mail at mymail dot com
 ExitRelay 0
 ```
 
-> Please make yourself familiar with the official documentation at [torproject.org](www.torproject.org), especially the [Tor Manual](https://2019.www.torproject.org/docs/tor-manual.html.en), to understand the capabilities of a Tor Relay and the meaning of all the configuration parameters!
+> Please make yourself familiar with the official documentation at [torproject.org](www.torproject.org), especially the [Tor Manual](https://2019.www.torproject.org/docs/tor-manual.html.en), to understand the capabilities of a Tor relay and the power of all its configuration parameters!
 
 You may & should define further configuration parameters ... and if done, save the modified *torrc*.
 
