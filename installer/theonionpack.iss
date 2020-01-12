@@ -15,9 +15,9 @@
 
 ; =====
 ; Supported INSTALLER command line parameters:
-; /tob="theonionbox-xx.x.tag.gz":   To install from a locally (at setup time) provided packache of The Onion Box
+; /tob="theonionbox-xx.x.tar.gz":   To install from a locally (at setup time) provided packache of The Onion Box
 ;                                   (rather then pip'ing this from online).
-; /top="theonionpack-xx.x.tag.gz":  To install a locally (at setup time) provided packache of The Onion Pack
+; /top="theonionpack-xx.x.tar.gz":  To install a locally (at setup time) provided packache of The Onion Pack
 ;                                   (rather then using the one from this installer or pip'ing it from online).
 
 ; All default INSTALLER commandline options are supported as well.
@@ -54,18 +54,15 @@
 ; Copyright
 #define __copyright__ ReadIni(INIFile, "theonionpack", "copyright")
 
-
 [ThirdParty]
 UseRelativePaths=True
-
 
 [Setup]
 AppName={# __title__ } 
 AppVersion={# __version__}
 AppCopyright={# __copyright__ }
 AppId={{9CF06087-6B33-44B0-B9EE-24A3EE0678C9}
-UsePreviousAppDir=No
-DefaultDirName=TheOnionPack
+DefaultDirName={userpf}\TheOnionPack
 DisableWelcomePage=False
 UninstallLogMode=new
 PrivilegesRequired=lowest
@@ -107,7 +104,7 @@ Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafter
   #if FileExists(top_file)
     #define theonionpack top_file
     #pragma message "TheOnionPack package @ '" + theonionpack + "' will be included in this installer."
-    Source: "{# theonionpack}"; DestDir: "{app}\Python"; DestName: "{# ExtractFileName(theonionpack)}"
+    Source: "{# theonionpack}"; DestDir: "{app}\Python"; DestName: "{# ExtractFileName(theonionpack)}"; Flags: deleteafterinstall
   #else
     #pragma error "FileNotFound: TheOnionPack package @ '" + theonionpack + "'!"
     #undef theonionpack
@@ -121,14 +118,14 @@ Source: "{tmp}\get-pip.py"; DestDir: "{app}\Python"; Flags: external deleteafter
 Source: "{code:GetAbsSourcePath|{param:tob}}"; \
     DestDir: "{app}\Python"; \
     DestName: "{code:ExtractFN|{param:tob}}"; \
-    Flags: external; \
+    Flags: external deleteafterinstall; \
     Check: CheckIfExists(ExpandConstant('{param:tob}'))
 
 ; local package of TheOnionPack: CommandLine parameter to the INSTALLER
 Source: "{code:GetAbsSourcePath|{param:tob}}"; \
     DestDir: "{app}\Python"; \
     DestName: "{code:ExtractFN|{param:top}}"; \
-    Flags: external; \
+    Flags: external deleteafterinstall; \
     Check: CheckIfExists(ExpandConstant('{param:top}'))
 
 ; An icon ...
@@ -158,6 +155,14 @@ Name: "{userstartup}\The Onion Pack"; \
     Parameters: "--tor ""{app}\Tor"""; \
     Comment: "Launching The Onion Pack..."; \
     Tasks: startup
+
+; And finally: A desktop icon...    
+Name: "{userdesktop}\The Onion Pack"; \
+    Filename: "{app}\Python\Scripts\theonionpack.exe"; \
+    WorkingDir: "{app}"; \
+    Flags: runminimized; \
+    Parameters: "--tor ""{app}\Tor"""; \
+    Comment: "Launching The Onion Pack...";
 
 [CustomMessages]
 MSG_INSTALLING_TOP=Now installing The Onion Pack. This may take some time, as a number of additional packages most probably have to be collected from the Internet...
@@ -232,13 +237,8 @@ Filename: "{uninstallexe}"; \
 
 
 [InstallDelete]
-#ifdef theonionpack
-  Type: files; Name: "{app}\Python\{# ExtractFileName(theonionpack)}"
-#endif
-
-; To remove local pip packages
-Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:tob}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:tob}}'))
-Type: files; Name: "{app}\Python\{code:ExtractFileName|{param:top}}"; Check: FileExists(ExpandConstant('{app}\Python\{code:ExtractFileName|{param:top}}'))
+; InstallDelete ... deletes files as the first step of installation!!
+; Thus it's of no use for us!
 
 
 [UninstallRun]
