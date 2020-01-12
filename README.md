@@ -2,6 +2,11 @@
 This is The Onion Pack, a **Tor Relay Bundle** for Windows.
 It allows you to install everything you need to run a Tor relay (or a Tor bridge) on your Windows computer system & offers you a smart interface to monitor and control your relay.
 
+> **Statement of Independence**  
+> This product is produced independently from the Tor(R) anonymity software and
+carries no guarantee from [The Tor Project](www.torproject.org) about quality, suitability or anything
+else.
+
 ## Installation
 To install The Onion Pack on your Windows computer, download & run [TheOnionPack.exe](https://github.com/ralphwetzel/theonionpack/releases/latest) , its installation programm.
 
