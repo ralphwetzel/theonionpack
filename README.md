@@ -4,11 +4,11 @@ It allows you to install everything you need to run a Tor relay (or a Tor bridge
 
 > **Statement of Independence**  
 > This product is produced independently from the Tor(R) anonymity software and
-carries no guarantee from [The Tor Project](www.torproject.org) about quality, suitability or anything
+carries no guarantee from [The Tor Project](https://www.torproject.org) about quality, suitability or anything
 else.
 
 ## Installation
-To install The Onion Pack on your Windows computer, download & run [TheOnionPack.exe](https://github.com/ralphwetzel/theonionpack/releases/latest) , its installation programm.
+To install The Onion Pack on your Windows computer, download & run [TheOnionPack.exe](https://github.com/ralphwetzel/theonionpack/releases/latest), its installation program.
 
 This installation program is going to perform a number of tasks:
 
@@ -76,7 +76,7 @@ ContactInfo mail at mymail dot com
 ExitRelay 0
 ```
 
-> Please make yourself familiar with the official documentation at [torproject.org](www.torproject.org), especially the [Tor Manual](https://2019.www.torproject.org/docs/tor-manual.html.en), to understand the capabilities of a Tor relay and the power of all its configuration parameters!
+> Please make yourself familiar with the official documentation at [torproject.org](https://www.torproject.org), especially the [Tor Manual](https://2019.www.torproject.org/docs/tor-manual.html.en), to understand the capabilities of a Tor relay and the power of all its configuration parameters!
 
 You may & should define further configuration parameters ... and if done, save the modified *torrc*.
 
