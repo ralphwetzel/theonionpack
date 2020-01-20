@@ -131,12 +131,14 @@ Source: "{code:GetAbsSourcePath|{param:tob}}"; \
 ; An icon ...
 ; Source: "..\theonionpack\icons\top256.ico"; DestDir: "{app}"; Attribs: hidden
 
-
 [Dirs]
 ; Those two directories hold the data of the Tor relay (e.g. fingerprints).
 ; We'll never touch them!
 Name: "{app}\Data"; Flags: uninsneveruninstall
 Name: "{app}\Data\torrc"; Flags: uninsneveruninstall
+
+; Clean the Python directory from support files of TheOnionBox (> TOBv20.2).
+Name: "{app}\Python\theonionbox"; Flags: deleteafterinstall
 
 [Icons]
 ; This link gets the path to the Tor as a command line parameter.
