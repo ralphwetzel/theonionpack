@@ -19,24 +19,10 @@ jobs:
     - name: Clone obfs4
       run: git clone --branch obfs4proxy-0.0.11 https://gitlab.com/yawning/obfs4.git "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git"
 
-    # - run: git checkout obfs4/obfs4proxy-0.0.11
-    
-    - run: go version
-      
-    - run: dir
-
     - name: Get obfs4proxy's dependencies...
       run: go get -d "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\..."
 
-    # - run: mkdir -p "$ENV:GOROOT/src/gitlab.com/yawning"
-    # - run: mklink /D "./obfs4" "$GOPATH/src/gitlab.com/yawning/obfs4.git"
-    
-    ## This does not work ... as PS interprets the -Name as a relative path - whereas it's obviously ABSOLUTE!!
-    # - run: New-Item -ItemType SymbolicLink -Name $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git -Target ".\obfs4\"
-
-    # - run: xcopy ".\obfs4\" "%GOROOT%\src\gitlab.com\yawning\obfs4.git" /E
-
-    - name: Building obfs4proxy...
+    - name: Build obfs4proxy
       run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
 
     - uses: actions/setup-python@master
@@ -44,7 +30,7 @@ jobs:
         python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
         architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
 
-    - name: Run setup.py to create sdist
+    - name: Run setup.py to create TheOnionPack sdist
       run: python setup.py sdist --dist-dir installer
 
     - name: Run Inno Compiler
