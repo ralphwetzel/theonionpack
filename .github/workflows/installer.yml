@@ -30,7 +30,11 @@ jobs:
 
     - run: mkdir -p "$ENV:GOROOT/src/gitlab.com/yawning"
     # - run: mklink /D "./obfs4" "$GOPATH/src/gitlab.com/yawning/obfs4.git"
-    - run: New-Item -ItemType SymbolicLink -Name $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git -Target ".\obfs4\"
+    
+    ## This does not work ... as PS interprets the -Name as a relative path - whereas it's obviously ABSOLUTE!!
+    # - run: New-Item -ItemType SymbolicLink -Name $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git -Target ".\obfs4\"
+
+    - run: xcopy ".\obfs4\" "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git" /E
 
     - name: Building obfs4proxy...
       run: go build -x -v -i -o installer/obfs4proxy.exe ./obfs4/obfs4proxy
