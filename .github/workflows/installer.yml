@@ -17,7 +17,7 @@ jobs:
         go-version: '1.13'
 
     - name: Clone obfs4
-      run: git clone --branch obfs4proxy-0.0.11 https://gitlab.com/yawning/obfs4.git
+      run: git clone --branch obfs4proxy-0.0.11 https://gitlab.com/yawning/obfs4.git "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git"
 
     # - run: git checkout obfs4/obfs4proxy-0.0.11
     
@@ -28,13 +28,13 @@ jobs:
     # - name: Get obfs4proxy's dependencies...
     #  run: go get -d ./obfs4/...
 
-    - run: mkdir -p "$ENV:GOROOT/src/gitlab.com/yawning"
+    # - run: mkdir -p "$ENV:GOROOT/src/gitlab.com/yawning"
     # - run: mklink /D "./obfs4" "$GOPATH/src/gitlab.com/yawning/obfs4.git"
     
     ## This does not work ... as PS interprets the -Name as a relative path - whereas it's obviously ABSOLUTE!!
     # - run: New-Item -ItemType SymbolicLink -Name $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git -Target ".\obfs4\"
 
-    - run: xcopy ".\obfs4\" "%GOROOT%\src\gitlab.com\yawning\obfs4.git" /E
+    # - run: xcopy ".\obfs4\" "%GOROOT%\src\gitlab.com\yawning\obfs4.git" /E
 
     - name: Building obfs4proxy...
       run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4\obfs4proxy
