@@ -14,7 +14,7 @@ jobs:
 
     - uses: actions/setup-go@master
 
-    - name: Create temp direcoty
+    - name: Create temp directory
       run: md temp
     - run: cd temp
 
@@ -22,7 +22,7 @@ jobs:
       run: git clone https://gitlab.com/yawning/obfs4.git
 
     - run: cd obfs4
-    - run: git checkout obfs4proxy-0.0.11
+    # - run: git checkout obfs4proxy-0.0.11
 
     - name: Building obfs4proxy...
       run: go build -o obfs4proxy/obfs4proxy ../../installer/obfs4proxy
