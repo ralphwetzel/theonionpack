@@ -21,6 +21,8 @@ jobs:
 
     # - run: git checkout obfs4/obfs4proxy-0.0.11
     
+    - run: go -version
+      
     - run: dir
 
     - name: Get obfs4proxy's dependencies...
