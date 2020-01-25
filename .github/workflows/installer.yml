@@ -17,6 +17,8 @@ jobs:
     - name: Clone obfs4
       run: git clone https://gitlab.com/yawning/obfs4.git
 
+    - run: git checkout obfs4/obfs4proxy-0.0.11
+    
     - run: dir
       
     - name: Building obfs4proxy...
