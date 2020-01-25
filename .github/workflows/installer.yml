@@ -28,6 +28,9 @@ jobs:
     # - name: Get obfs4proxy's dependencies...
     #  run: go get -d ./obfs4/...
 
+    - run: mkdir -p "$GOPATH/src/gitlab.com/yawning"
+    - run: mklink /D "./obfs4" "$GOPATH/src/gitlab.com/yawning/obfs4.git"
+
     - name: Building obfs4proxy...
       run: go build -x -v -i -o installer/obfs4proxy.exe ./obfs4/obfs4proxy
 
