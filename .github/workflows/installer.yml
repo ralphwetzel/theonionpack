@@ -13,6 +13,8 @@ jobs:
     - uses: actions/checkout@master
 
     - uses: actions/setup-go@master
+      with:
+        go-version: '1.13'
 
     - name: Clone obfs4
       run: git clone --branch obfs4proxy-0.0.11 https://gitlab.com/yawning/obfs4.git
