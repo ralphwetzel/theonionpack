@@ -30,7 +30,7 @@ jobs:
 
     - run: mkdir -p "$ENV:GOROOT/src/gitlab.com/yawning"
     # - run: mklink /D "./obfs4" "$GOPATH/src/gitlab.com/yawning/obfs4.git"
-    - run: New-Item -ItemType SymbolicLink -Name "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git" -Target ".\obfs4\"
+    - run: New-Item -ItemType SymbolicLink -Name $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git -Target ".\obfs4\"
 
     - name: Building obfs4proxy...
       run: go build -x -v -i -o installer/obfs4proxy.exe ./obfs4/obfs4proxy
