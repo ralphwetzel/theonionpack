@@ -37,7 +37,7 @@ jobs:
     # - run: xcopy ".\obfs4\" "%GOROOT%\src\gitlab.com\yawning\obfs4.git" /E
 
     - name: Building obfs4proxy...
-      run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4\obfs4proxy
+      run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
 
     - uses: actions/setup-python@master
       with:
