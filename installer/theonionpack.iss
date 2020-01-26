@@ -84,6 +84,7 @@ VersionInfoProductName={# __title__}
 VersionInfoCopyright={# __copyright__}
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64
+DisableDirPage=no
 
 [Files]
 ; The statement of Independence; only used by the installer.
@@ -120,16 +121,32 @@ Source: "{code:GetAbsSourcePath|{param:tob}}"; \
     DestName: "{code:ExtractFN|{param:tob}}"; \
     Flags: external deleteafterinstall; \
     Check: CheckIfExists(ExpandConstant('{param:tob}'))
-
+;
 ; local package of TheOnionPack: CommandLine parameter to the INSTALLER
 Source: "{code:GetAbsSourcePath|{param:tob}}"; \
     DestDir: "{app}\Python"; \
     DestName: "{code:ExtractFN|{param:top}}"; \
     Flags: external deleteafterinstall; \
     Check: CheckIfExists(ExpandConstant('{param:top}'))
-
+;
 ; An icon ...
 ; Source: "..\theonionpack\icons\top256.ico"; DestDir: "{app}"; Attribs: hidden
+;
+; This adds support to install obfs4proxy.
+; Prerequisite is 'obfs4proxy.exe' being present in the same directoy as this installer file.
+; A GitHub action is established to compile obfs4proxy & put it there - as requested.
+; If the file is found, we provide it as an optional component for installation.
+#define obfs_file RemoveBackslash(SourcePath) + "\obfs4proxy.exe"
+#if FileExists(obfs_file)
+  #pragma message "obfs4proxy support will be included in this installer."
+  Source: "{# obfs_file}"; \
+    DestDir: "{app}\Tor\Tor\PluggableTransport"; \
+    DestName: "{# ExtractFileName(obfs_file)}"; \
+    Tasks: obfs4proxy
+#else
+  #pragma message "'obfs4proxy.exe' not found. No obfs4proxy support with this installer."
+  #undef obfs_file
+#endif
 
 [Dirs]
 ; Those two directories hold the data of the Tor relay (e.g. fingerprints).
@@ -173,6 +190,11 @@ MSG_FAILED_TOB=We failed to install the necessary packages for The Onion Pack in
 MSG_FAILED_TOP=We failed to add The Onion Pack to the Python environment.
 MSG_FAILED_FINISHED=Setup failed to install The Onion Pack on your computer. You may run the uninstaller to remove now the obsolete remainders of this procedure. Sorry for this inconvenience!
 
+[Tasks]
+Name: "startup"; Description: "Start The Onion Pack when you start Windows."; GroupDescription: "Autostart"; Flags: unchecked
+#ifdef obfs_file
+  Name: "obfs4proxy"; Description: "Install obfs4proxy {# GetFileVersion(obfs_file)}"; GroupDescription: "Obfuscation Support"; Flags: unchecked
+#endif
 
 [Run]
 ; Those runners check - parameter AfterInstall - if a dedicated file (that was part of the current step of installation) exists.
@@ -259,6 +281,7 @@ Type: files; Name: "{app}\unins.req"
 Type: dirifempty; Name: "{app}\Python\Lib\site-packages"
 Type: dirifempty; Name: "{app}\Python\Lib"
 Type: dirifempty; Name: "{app}\Python\service"
+Type: dirifempty; Name: "{app}\Python"
 ; Type: dirifempty; Name: "{app}\Python\support\osxtemp"
 ; Type: dirifempty; Name: "{app}\Python\support"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox\tob\system\windows"
@@ -266,9 +289,6 @@ Type: dirifempty; Name: "{app}\Python\service"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox\tob"
 ; Type: dirifempty; Name: "{app}\Python\theonionbox"
 ;Type: files; Name: "{app}\Tor\Data\torrc-defaults"
-
-[Tasks]
-Name: "startup"; Description: "Start The Onion Pack when you start Windows"; GroupDescription: "Autostart"
 
 [Code]
 var
