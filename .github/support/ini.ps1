@@ -34,6 +34,7 @@ Function Parse-IniFile ($file) {
 }
 
 $ini = Parse-IniFile($File)
+echo $ini
 if (Get-Member -InputObject $ini -Name $Section) {
   if (Get-Member -InputObject $ini[$Section] -Name $Value)
   {
