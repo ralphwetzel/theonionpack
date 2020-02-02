@@ -37,8 +37,9 @@ $ini = Parse-IniFile($File)
 
 if ($ini.ContainsKey($Section)) {
   if ($ini[$Section].ContainsKey($Value)) {
-    Write-Host "${File}: [${Section}]${Value} = ${ini[$Section][$Value]}"
-    return $ini[$Section][$Value]
+    $r = $ini[$Section][$Value]
+    Write-Host "${File}: [${Section}]${Value} = ${r}"
+    return $r
   } else {
     Write-Host "Value '${Value}' not found in section '${Section}'."
   }
