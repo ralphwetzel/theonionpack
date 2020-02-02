@@ -41,12 +41,12 @@ Write-Host $Value
 
 Write-Host $ini[$Section][$Value]
 
-if ($ini -contains $Section) {
+if ($ini.ContainsKey($Section)) {
   if ($ini[$Section] -contains $Value) {
     return $ini[$Section][$Value]
   } else {
-    Write-Host '$Value not found in section $Section.'
+    Write-Host "${Value} not found in section ${Section}."
   }
 } else {
-  Write-Host 'Section $Section not found in $File.'
+  Write-Host "Section ${Section} not found in ${File}."
 }
