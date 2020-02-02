@@ -19,7 +19,7 @@ jobs:
     - name: Get obfs4 version from setup.ini
       shell: pwsh
       run: |
-        echo ::set-env name=OBFS_VERSION::${{.github\support\ini.ps1 -File thonionpack\setup.ini -Section obfs4 -Value version}}
+        echo ::set-env name=OBFS_VERSION::$(.github\support\ini.ps1 -File theonionpack\setup.ini -Section obfs4 -Value version)
 
     - name: Clone obfs4
       run: git clone --branch obfs4proxy-{{env:OBFS_VERSION}} https://gitlab.com/yawning/obfs4.git "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git"
