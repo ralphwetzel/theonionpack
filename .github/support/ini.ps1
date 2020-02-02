@@ -33,8 +33,14 @@ Function Parse-IniFile ($file) {
   $ini
 }
 
+Write-Host $File
 $ini = Parse-IniFile($File)
-echo $ini
+
+Write-Host $Section
+Write-Host $Value
+
+Write-Host $ini[$Section][$Value]
+
 if (Get-Member -InputObject $ini -Name $Section) {
   if (Get-Member -InputObject $ini[$Section] -Name $Value)
   {
