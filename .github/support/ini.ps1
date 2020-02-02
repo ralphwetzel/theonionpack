@@ -44,3 +44,7 @@ if ($ini.ContainsKey($Section)) {
 } else {
   Write-Host "Section '${Section}' not found in '${File}'."
 }
+
+# Signal error here!
+$host.SetShouldExit(1)
+exit 1
