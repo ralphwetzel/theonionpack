@@ -33,20 +33,14 @@ Function Parse-IniFile ($file) {
   $ini
 }
 
-Write-Host $File
 $ini = Parse-IniFile($File)
 
-Write-Host $Section
-Write-Host $Value
-
-Write-Host $ini[$Section][$Value]
-
 if ($ini.ContainsKey($Section)) {
-  if ($ini[$Section] -contains $Value) {
+  if ($ini[$Section].ContainsKey($Value)) {
     return $ini[$Section][$Value]
   } else {
-    Write-Host "${Value} not found in section ${Section}."
+    Write-Host "Value '${Value}' not found in section '${Section}'."
   }
 } else {
-  Write-Host "Section ${Section} not found in ${File}."
+  Write-Host "Section '${Section}' not found in '${File}'."
 }
