@@ -115,3 +115,10 @@ class Tor():
         retval = list(self._messages)
         self.lock.release()
         return retval
+
+    @property
+    def version(self):
+        params = [str(self.path)]
+        params.extend(['--version'])
+        v = subprocess.check_output(params).decode('utf-8')
+        return v
