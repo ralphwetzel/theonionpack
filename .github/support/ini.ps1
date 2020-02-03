@@ -1,5 +1,15 @@
+#####
+# PowerShell Script to read  value from an .ini-style script
+# using code from https://stackoverflow.com/questions/417798/ini-file-parsing-in-powershell
+# Example: .github\support\ini.ps1 -File theonionpack\setup.ini -Section obfs4 -Value version
+# -File: path to .ini - file
+# -Section: name of the section to read from
+# -Value: name of the parameter to retrieve
+#
+# returns the value if found; if not, exits with exit code 1
+
 param(
-  # Our preferred encoding
+
   [parameter(Mandatory)]
   [string]$File,
 
