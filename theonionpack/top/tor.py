@@ -1,6 +1,8 @@
 import collections
+import contextlib
 import os
 import pathlib
+import re
 import subprocess
 import threading
 import typing
@@ -9,6 +11,28 @@ import uuid
 from shelljob import proc
 
 from .torhasher import hash_password
+
+
+class obfs4Proxy:
+    def __init__(self, path):
+        self.path = path
+
+    @property
+    def version(self) -> typing.Optional[typing.List[int]]:
+        if self.path is None:
+            return None
+
+        params = [str(self.path)]
+        params.extend(['--version'])
+        with contextlib.suppress(Exception):
+            v = subprocess.check_output(params).decode('utf-8')
+            v = re.findall('(?:obfs4proxy-)((?:\d+\.?){3})', v)
+            if len(v) > 0:
+                v = v[0].split('.')
+                return [int(y) for y in v]
+
+        return None
+
 
 class Tor():
 
@@ -40,6 +64,8 @@ class Tor():
         self._messages = collections.deque(maxlen=400)
         self.lock = threading.RLock()
 
+        self.obfs = obfs4Proxy(find('obfs4proxy.exe', tor))
+
     def run(self, owner_pid: int = os.getpid(), password: str = None, additional_command_line: typing.List[str] = None):
 
         if self.process is not None:
@@ -69,6 +95,7 @@ class Tor():
             params.extend(['GeoIPv6File', self.geoIP6])
 
         params.extend(['+__ControlPort', '9051'])
+        params.extend(['+__SocksPort', '9050'])
 
         if self.password is not None:
             params.extend(['__HashedControlSessionPassword', self.password])
@@ -117,8 +144,15 @@ class Tor():
         return retval
 
     @property
-    def version(self):
+    def version(self) -> typing.Optional[typing.List[int]]:
         params = [str(self.path)]
         params.extend(['--version'])
-        v = subprocess.check_output(params).decode('utf-8')
-        return v
+
+        with contextlib.suppress(Exception):
+            v = subprocess.check_output(params).decode('utf-8')
+            v = re.findall('(?:Tor version )((?:\d+\.?){4})', v)
+            if len(v) > 0:
+                v = v[0].split('.')
+                return [int(y) for y in v]
+
+        return None
