@@ -342,10 +342,13 @@ setup(
             'theonionpack = theonionpack.__main__:main']
     },
     install_requires=[
-        'theonionbox>=20.1',
+        'APScheduler',
+        'click',
+        'filelock',
         'pystray',
+        'requests',
         'shelljob',
-        'filelock'
+        'theonionbox>=20.1'
     ],
     long_description_content_type='text/x-rst; charset=UTF-8',
     classifiers=[
