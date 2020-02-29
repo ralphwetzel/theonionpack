@@ -1,6 +1,8 @@
+import contextlib
 import importlib
 import os
 import pathlib
+import re
 import signal
 import sys
 import subprocess
@@ -55,3 +57,18 @@ class TheOnionBox():
 
     def poll(self):
         return self.tob.poll()
+
+    @property
+    def version(self):
+        params = [sys.executable, '-m', self.name]
+        params.extend(['--version'])
+        with contextlib.suppress(Exception):
+            v = subprocess.check_output(params).decode('utf-8')
+            v = re.findall('(?:Version )((?:\d+\.?){2,3})(?: \()', v)
+            if len(v) > 0:
+                v = v[0].split('.')
+                while len(v) < 3:
+                    v.append('0')
+                return [int(y) for y in v]
+
+        return None
