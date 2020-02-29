@@ -15,9 +15,9 @@
 
 ; =====
 ; Supported INSTALLER command line parameters:
-; /tob="theonionbox-xx.x.tar.gz":   To install from a locally (at setup time) provided packache of The Onion Box
+; /tob="theonionbox-xx.x.tar.gz":   To install from a locally (at setup time) provided package of The Onion Box
 ;                                   (rather then pip'ing this from online).
-; /top="theonionpack-xx.x.tar.gz":  To install a locally (at setup time) provided packache of The Onion Pack
+; /top="theonionpack-xx.x.tar.gz":  To install a locally (at setup time) provided package of The Onion Pack
 ;                                   (rather then using the one from this installer or pip'ing it from online).
 
 ; All default INSTALLER commandline options are supported as well.
@@ -44,6 +44,9 @@
 
 ; Tor Download page
 #define tor ReadIni(INIFile, "tor", "download")
+
+; obfs4proxy Version
+#define obfs4version ReadIni(INIFile, "obfs4", "version")
 
 ; Name / Title
 #define __title__ ReadIni(INIFile, "theonionpack", "title")
@@ -193,7 +196,7 @@ MSG_FAILED_FINISHED=Setup failed to install The Onion Pack on your computer. You
 [Tasks]
 Name: "startup"; Description: "Start The Onion Pack when you start Windows."; GroupDescription: "Autostart"; Flags: unchecked
 #ifdef obfs_file
-  Name: "obfs4proxy"; Description: "Install obfs4proxy {# GetFileVersion(obfs_file)}"; GroupDescription: "Obfuscation Support"; Flags: unchecked
+  Name: "obfs4proxy"; Description: "Install obfs4proxy ({# obfs4version})"; GroupDescription: "Obfuscation Support"; Flags: unchecked
 #endif
 
 [Run]
@@ -201,7 +204,7 @@ Name: "startup"; Description: "Start The Onion Pack when you start Windows."; Gr
 ; If not, ConfirmInstallation raises a MsgBox and sets the error flag - to abort installation.
 ; From step two on, ConfirmNoInstallError (parameter Check) confirms that the error flag is down. If raised, this step is skipped.
 
-; We start by getting pip.
+; Installation starts by getting pip.
 Filename: "{app}\Python\python.exe"; \
   Parameters: "get-pip.py ""pip>18"" --no-warn-script-location"; \
   Flags: runhidden; \
@@ -295,6 +298,9 @@ var
   // Custom page showing progress while extracting the Tor Download Link
   TorDownloadLinkPage: TOutputProgressWizardPage;
 
+  // Custom page showing progress while finalizing the preps for installation
+  PreparationPage: TOutputProgressWizardPage;
+
   // Independence Statement Acknowledgement Page
   IndependencePage: TOutputMsgMemoWizardPage;
   IndependenceAcceptedRadio: TRadioButton;
@@ -315,7 +321,7 @@ procedure InitializeWizard();
 begin
 
   // We are going to download Python from python.org...
-  // ... and get-pip.py from pypa,io.
+  // ... and get-pip.py from pypa.io.
 
   // the target file shall end with '.zip' ... to later support unzipping!
   if Is64BitInstallMode() = True then begin
@@ -330,10 +336,15 @@ begin
   // Yet we'll do this later - after the preparation stage.
   idpDownloadAfter(wpPreparing);
 
-  // Initialize the custom page to fetch the Tor Doenload link.
+  // Initialize the custom page to fetch the Tor Download link.
   // This Link (if found) will later (@ PrepareToInstall) be added
   // to the files to be downloaded => becoming {tmp}\tor.zip
   TorDownloadLinkPage:= CreateOutputProgressPage('Extracting Download Link for current Tor version', '');
+
+  // This is a custom page we display while performing final preparations
+  // prior installation, e.g. running the uninstallers.
+  PreparationPage:= CreateOutputProgressPage('Finalizing the preparations to install The Onion Pack', '');
+  PreparationPage.ProgressBar.Style := npbstMarquee;
 
   // Create the page to acknowledge the Statement of Independence
   CreateIndependencePage();
@@ -445,6 +456,67 @@ begin
 end;
 
 
+// This checks for a given command line parameter = flag
+function CheckForCommandLineFlag(Flag: string): Boolean;
+var
+  p: string;
+  i: integer;
+
+begin
+  Result := False;
+
+  debug('Number of CommandLine parameters: ' + IntToStr(ParamCount()))
+
+  // Flag := '/' + Flag
+  for i := 1 to ParamCount() do begin
+    p := ParamStr(i)
+    debug('#' + IntToStr(i) + ': ' + p)
+    if p = Flag then begin
+      Result := True
+      Break;
+    end;
+  end;
+end;
+
+procedure RunUninstallers();
+var
+    sUnInstPath: string;
+    findRec: TFindRec;
+    unins: TStringList;
+    i: Integer;
+    iResultCode: Integer;
+
+begin
+    unins := TStringList.Create;
+    unins.Sorted := True;
+    sUnInstPath := ExpandConstant('{app}\unins*.exe');
+    if FindFirst(ExpandConstant('{app}\unins*.exe'), findRec) then begin
+      debug(findRec.Name);
+      // Collect all the unins???.exe files
+      try
+        repeat
+          // Don't count directories
+          if (findRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
+            unins.Add(findRec.Name);
+        until not FindNext(findRec);
+      finally
+        FindClose(findRec);
+      end;
+
+      i := unins.Count;
+      while i > 0 do begin
+        sUnInstPath := ExpandConstant('{app}') + '\' + unins[i - 1];
+        debug('Running uninstaller found @ ' + sUnInstPath);
+        
+        // https://stackoverflow.com/questions/2000296/inno-setup-how-to-automatically-uninstall-previous-installed-version
+        Exec(sUnInstPath, '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES','', SW_HIDE, ewWaitUntilTerminated, iResultCode);
+
+        i := i - 1
+      end;
+    end;
+end;
+
+
 procedure CurStepChanged(CurStep: TSetupStep);          
 
 var
@@ -452,17 +524,35 @@ var
 
 begin
   if CurStep = ssInstall then begin
+
+    try
+      PreparationPage.SetProgress(1, 100);
+      PreparationPage.ProgressBar.Style := npbstMarquee;
+      PreparationPage.Show
+
+      PreparationPage.SetText('Preparing downloaded files...', '');
       // Unzip downloaded files; will be copied by Inno to the target directory
       // Thus we support propper uninstalling later.
       UnZip(ExpandConstant('{tmp}\tor.zip'), ExpandConstant('{tmp}\Tor'));
       UnZip(ExpandConstant('{tmp}\python.zip'), ExpandConstant('{tmp}\Python'));
 
+      PreparationPage.SetText('Patching Python...', '');
       // Patch Python ...
       // Mandatory to enable pip operations later!
       pth := ExpandConstant('{tmp}\Python\python{#pth}._pth');    
       SaveStringsToFile(pth, ['', '# by TheOnionPack', '.\Lib\site-packages', 'import site'], true);
-      
+
+      if CheckForCommandLineFlag('/RunUninstall') then begin
+        debug('CommandLine parameter /RunUninstall defined: We are advised to run uninstallers - if there are any...');        
+        PreparationPage.SetText('Removing previous installations...', '');
+        RunUninstallers()
+      end;
+    
+    finally
+      PreparationPage.Hide
+    end;
   end;
+
   if CurStep = ssPostInstall then 
     begin
   end;
