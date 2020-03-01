@@ -26,17 +26,17 @@ jobs:
 
     - name: Get obfs4proxy's dependencies...
       run: go get -d "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\..."
-      if: succeeded()
+      if: success()
 
     - name: Build obfs4proxy
       run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
-      if: succeeded()
+      if: success()
 
     - uses: actions/setup-python@master
       with:
         python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
         architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-        if: always()
+      if: always()
 
     - name: Run setup.py to create TheOnionPack sdist
       run: python setup.py sdist --dist-dir installer
