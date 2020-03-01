@@ -8,6 +8,8 @@ jobs:
   build:
 
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@master
@@ -29,6 +31,7 @@ jobs:
 
     - name: Build obfs4proxy
       run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
+      if: success()
 
     - uses: actions/setup-python@master
       with:
