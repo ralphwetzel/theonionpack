@@ -26,7 +26,7 @@ jobs:
 
     - name: Get obfs4proxy's dependencies...
       run: go get -d "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\..."
-      if: failed()
+      if: failure()
 
     - name: Build obfs4proxy
       run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
