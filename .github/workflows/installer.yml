@@ -22,9 +22,9 @@ jobs:
         echo "::set-env name=OBFS_VERSION::$(.github\support\ini.ps1 -File theonionpack\setup.ini -Section obfs4 -Value version)"
 
     - name: Clone obfs4
-      run: git clone https://gitlab.com/yawning/obfs4.git "$ENV:GOROOT\src\gitlab.com\yawning\obfs4.git"
+      run: git clone https://gitlab.com/yawning/obfs4.git
 
-    - name: Checkout $ENV:OBFS_VERSION
+    - name: Checkout obfs4proxy
       run: git checkout obfs4proxy-$ENV:OBFS_VERSION
       working-directory: obfs4
 
