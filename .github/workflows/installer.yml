@@ -29,7 +29,7 @@ jobs:
       if: failure()
 
     - name: Build obfs4proxy
-      run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\obfs4proxy
+      run: go build -x -v -i -o installer\obfs4proxy.exe $ENV:GOROOT\src\gitlab.com\yawning\obfs4.git\...
       if: success()
 
     - uses: actions/setup-python@master
