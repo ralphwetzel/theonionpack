@@ -37,11 +37,12 @@ jobs:
       if: success()
       working-directory: obfs4
     
-    - name: Check for obfsproxy
+    - name: Copy obfs4proxy into installer directory
       shell: pwsh
       run: | 
         cd .\obfs4proxy
         dir
+        cp obfs4proxy ..\..\installer\obfs4proxy.exe
       working-directory: obfs4
 
     - uses: actions/setup-python@master
