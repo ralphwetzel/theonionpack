@@ -33,13 +33,13 @@ jobs:
       if: failure()
 
     - name: Build obfs4proxy
-      run: go build -x -v -i -o installer\obfs4proxy .\...
+      run: go build -x -v -i -o .\obfs4\obfs4proxy .\obfs4
       if: success()
-      working-directory: obfs4
+      # working-directory: obfs4
     
     - name: Check for obfsproxy
       run: dir
-      working-directory: installer\obfs4proxy
+      working-directory: obfs4\obfs4proxy
 
     - uses: actions/setup-python@master
       with:
