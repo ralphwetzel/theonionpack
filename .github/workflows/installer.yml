@@ -40,7 +40,7 @@ jobs:
     - name: Check for obfsproxy
       shell: pwsh
       run: | 
-        cd obfs4proxy/obfs4proxy
+        cd .\obfs4proxy\obfs4proxy
         dir
       working-directory: obfs4
 
