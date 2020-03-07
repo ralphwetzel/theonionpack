@@ -35,8 +35,6 @@ kernel32 = ctypes.WinDLL('kernel32')
 user32 = ctypes.WinDLL('user32')
 SW_HIDE = 0
 hWnd = kernel32.GetConsoleWindow()
-if hWnd:
-    user32.ShowWindow(hWnd, SW_HIDE)
 
 filetime = os.path.getmtime(__file__)
 __stamp__ = strftime('%Y%m%d|%H%M%S', localtime(filetime))
@@ -53,6 +51,9 @@ class Pack():
         self.cwd = pathlib.WindowsPath(self.config['cwd'])
 
         self.status = 0
+
+        if hWnd and not (config.debug or config.trace):
+            user32.ShowWindow(hWnd, SW_HIDE)
 
         # The AutoUpdate behaviour shall be persisted into the registry
         # Default behavior ... in case we encounter issues when accessing the registry!
