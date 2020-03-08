@@ -3,6 +3,7 @@ import configparser
 import contextlib
 import ctypes
 import datetime
+# import logging
 import os
 import pathlib
 import random
@@ -40,7 +41,7 @@ filetime = os.path.getmtime(__file__)
 __stamp__ = strftime('%Y%m%d|%H%M%S', localtime(filetime))
 
 
-class Pack():
+class Pack:
 
     def __init__(self, config):
 
@@ -52,6 +53,7 @@ class Pack():
 
         self.status = 0
 
+        # Hide the ConsoleWindow - if not in Debug or Trace mode!
         if hWnd and not (config.debug or config.trace):
             user32.ShowWindow(hWnd, SW_HIDE)
 
