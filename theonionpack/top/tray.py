@@ -25,7 +25,7 @@ class NOTIFYICONDATA_X(ctypes.Structure):
         ('uFlags', wintypes.UINT),
         ('uCallbackMessage', wintypes.UINT),
         ('hIcon', wintypes.HICON),
-        ('szTip', wintypes.WCHAR * 128),    # this was 64, which is only valid < Windows 20000
+        ('szTip', wintypes.WCHAR * 128),    # this was 64, which is only valid < Windows 2000
         ('dwState', wintypes.DWORD),
         ('dwStateMask', wintypes.DWORD),
         ('szInfo', wintypes.WCHAR * 256),
