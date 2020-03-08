@@ -184,7 +184,8 @@ class Pack:
                 MBox("Our instance of TheOnionBox terminated.\r\nThus we have to terminate as well! Sorry...",
                      style=0x10)
 
-        self.cron.shutdown()
+        if self.cron.running:
+            self.cron.shutdown()
         self.reg.Close()
         sys.exit(0)
 
