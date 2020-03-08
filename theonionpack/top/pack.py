@@ -141,6 +141,8 @@ class Pack:
             )
         )
 
+        self.tray.visible = True
+
     def run(self):
 
         self.lock = FileLock(str(self.cwd / 'theonionpack.lock'))
@@ -176,6 +178,7 @@ class Pack:
                  style=0x10)
 
         finally:
+            self.tray.visible = False
             self.lock.release()
 
         if running:
