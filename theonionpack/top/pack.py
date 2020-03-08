@@ -54,7 +54,7 @@ class Pack:
         self.status = 0
 
         # Hide the ConsoleWindow - if not in Debug or Trace mode!
-        if hWnd and not (config.debug or config.trace):
+        if hWnd and not (config['debug'] or config['trace']):
             user32.ShowWindow(hWnd, SW_HIDE)
 
         # The AutoUpdate behaviour shall be persisted into the registry
