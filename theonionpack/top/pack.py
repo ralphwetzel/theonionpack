@@ -127,6 +127,11 @@ class Pack:
                         checked=self.on_get_autupdate('auto'),
                         radio=True,
                         action=self.on_set_autoupdate('auto')
+                    ),
+                    pystray.Menu.SEPARATOR,
+                    pystray.MenuItem(
+                        'Check for update',
+                        action=self.on_check_update
                     )
                 )
             ),
@@ -207,14 +212,20 @@ class Pack:
             sleep(1)
 
     # Autoupdate
-    def check_update(self):
+    def check_update(self, by_user = False):
 
         vm = VersionManager('127.0.0.1:9050', __stamp__)
         if vm.update() is False:
-            self.cron.add_job(self.check_update,
-                              'date',
-                              run_date=datetime.datetime.now() + datetime.timedelta(seconds=10)
-                              )
+
+            if by_user:
+                message = 'I failed to check for updates of The Onion Pack. Please retry later.'
+                self.tray.notify(message)
+            else:
+                self.cron.add_job(self.check_update,
+                                  'date',
+                                  run_date=datetime.datetime.now() + datetime.timedelta(seconds=10)
+                                  )
+
             return False
 
         update = []
@@ -237,6 +248,9 @@ class Pack:
 
         if len(update) > 0:
 
+            # If this check was issued by a user, we only show a notification!
+            mode = 'notify' if by_user else self.autoupdate
+
             run = {
                 'auto': " I'm going to download and run my latest installer now - to perform the update.",
                 'notify': ' Please run my installer to update.'
@@ -248,24 +262,28 @@ class Pack:
             else:
                 message = f'There is an update available for {update[0]}.'
 
-            if (256 - len(run[self.autoupdate])) < len(message):
+            if (256 - len(run[mode])) < len(message):
                 message = "There are several updates available."
-            message += run[self.autoupdate]
+
+            message += run[mode]
             self.tray.notify(message)
 
-            if self.autoupdate == 'auto':
+            if mode == 'auto':
                 if self.get_latest_pack():
                     sleep(2)
                     self.do_quit()
                     return True
 
         else:
-            self.tray.notify()  # remove any message!
 
-        self.cron.add_job(self.check_update,
-                          'date',
-                          run_date=datetime.datetime.now() + datetime.timedelta(minutes=random.randrange(30, 60))
-                          )
+            message = "No updates available!" if by_user else ''    # remove any message!
+            self.tray.notify(message)
+
+        if not by_user:
+            self.cron.add_job(self.check_update,
+                              'date',
+                              run_date=datetime.datetime.now() + datetime.timedelta(minutes=random.randrange(30, 60))
+                              )
 
         return False
 
@@ -358,6 +376,9 @@ class Pack:
                 winreg.SetValue(self.reg, 'autoupdate', winreg.REG_SZ, status)
             self.autoupdate = status
         return set_autoupdate
+
+    def on_check_update(self, icon, item):
+        self.check_update(by_user=True)
 
     @property
     def version(self):
