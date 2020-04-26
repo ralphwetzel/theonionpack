@@ -240,12 +240,14 @@ def generate_data_files(data_files):
 
 packages = [
     'theonionpack',
-    'theonionpack.top'
+    'theonionpack.top',
+    'theonionpack.top.libraries'
 ]
 
 package_dir = {
     'theonionpack': 'theonionpack',
-    'theonionpack.top': 'theonionpack/top'
+    'theonionpack.top': 'theonionpack/top',
+    'theonionpack.top.libraries': 'theonionpack/top/libraries'
 }
 
 package_data = {
@@ -262,6 +264,7 @@ package_data = {
     'theonionpack': ['icons/top16.ico'
                      , 'setup.ini'
                      , '../README.md'
+                     , 'pages/*'
                      ]
 }
 
@@ -343,11 +346,12 @@ setup(
     },
     install_requires=[
         'APScheduler',
+        'bottle',
         'click',
         'filelock',
         'pystray',
         'requests',
-        'shelljob',
+        'shelljob==0.5.6',  # there's a bug in 0.5.8 that prevents installation!
         'theonionbox>=20.1'
     ],
     long_description_content_type='text/x-rst; charset=UTF-8',
