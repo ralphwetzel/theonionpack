@@ -3,8 +3,10 @@ import contextlib
 import os
 import pathlib
 import re
+import signal
 import subprocess
 import threading
+import time
 import typing
 import uuid
 
@@ -34,7 +36,7 @@ class obfs4Proxy:
         return None
 
 
-class Tor():
+class Tor:
 
     def __init__(self, tor: str = '.\Tor', data: str = '.\Data'):
 
@@ -50,6 +52,7 @@ class Tor():
 
         self.process = None
         self.owner = None
+        self.tor = None
 
         self.path = find('tor.exe', tor)
 
@@ -66,9 +69,11 @@ class Tor():
 
         self.obfs = obfs4Proxy(find('obfs4proxy.exe', tor))
 
+        self.last_modified = 0
+
     def run(self, owner_pid: int = os.getpid(), password: str = None, additional_command_line: typing.List[str] = None):
 
-        if self.process is not None:
+        if self.running:
             raise OSError('Already running...')
 
         if self.path is None:
@@ -122,25 +127,36 @@ class Tor():
         # print(self.process)
 
         self.process = proc.Group()
-        self.process.run(params)
+        self.tor = self.process.run(params)
 
-        return self.process
+        return self.tor
 
     def collect_messages(self):
-        if self.process.is_pending():
+        if self.process and self.process.is_pending():
             self.lock.acquire()
             lines = self.process.readlines(timeout=0.25)
-            for proc, line in lines:
-                l = line.decode('utf-8').rstrip('\r\n')
-                if len(l) > 0:
-                    self._messages.append(l)
+            if len(lines) > 0:
+                self.last_modified = time.time()
+                for proc, line in lines:
+                    l = line.decode('utf-8').rstrip('\r\n')
+                    if len(l) > 0:
+                        self._messages.append([self.last_modified, l])
             self.lock.release()
 
     @property
     def messages(self):
+        return self.get_messages()
+
+    def get_messages(self, since: float = 0.0, until: typing.Optional[float] = None) -> typing.List[str]:
+
         self.lock.acquire()
-        retval = list(self._messages)
+        if until is None:
+            until = self.last_modified
+
+        retval = [m[1] for m in reversed(self._messages) if since < m[0] <= until]
         self.lock.release()
+
+        retval.reverse()
         return retval
 
     @property
@@ -156,3 +172,24 @@ class Tor():
                 return [int(y) for y in v]
 
         return None
+
+    def stop(self):
+        # if the subprocess is still running...
+        if self.running:
+            # ... terminate it.
+            pid = self.tor.pid
+            os.kill(pid, signal.SIGINT)
+            self.tor.wait()
+            self.tor = None
+
+        self.process = None
+
+    def poll(self):
+        return self.tor.poll()
+
+    @property
+    def running(self):
+        if self.tor is None:
+            return False
+
+        return self.tor.poll() is None

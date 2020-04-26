@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{get('title')}}</title>
+</head>
+
+<%
+from theonionbox.tob.template_tools import header_row, standard_row, box_datum_grid, box_value_grid, box_right_grid
+%>
+
+<script
+        src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="latolatin/latolatinfonts.css">
+
+<style>
+    header {
+        background-color: rgba(132, 54, 187, 100);
+        color: white;
+    }
+
+    header .navbar-brand {
+        font-family: "LatoLatinWebSemiBold", sans-serif;
+        color: white;
+        text-shadow: 1px 1px 2px #23300e;
+    }
+
+    .box_bold {
+        font-family: "LatoLatinWebBlack";
+        font-size: 36px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_section {
+        font-family: "LatoLatinWebLight";
+        font-size: 36px;
+        text-align: left;
+    }
+
+    .box_datum {
+        font-family: "LatoLatinWebLight";
+        font-size: 19px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_datum_bold {
+        font-family: "LatoLatinWebBlack";
+        font-size: 19px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_datum_modal {
+        font-family: "LatoLatinWebLight";
+        font-size: 19px;
+        text-align: right;
+    }
+
+    .box_value {
+        font-family: "LatoLatinWeb";
+        font-size: 19px;
+        text-align: left;
+
+    }
+
+    code {
+        font-family: monospace;
+        color: dimgrey;
+    }
+
+</style>
+
+<body>
+
+<header class="navbar navbar-expand d-flex" style="align-items: center">
+    <span class="navbar-brand" aria-label="The Onion Pack">
+        <img class="my-auto" src="logo.ico" alt="Logo" width="24px" height="24px">
+        <span class="navbar-brand h1 mb-0 nickname">{{get('nickname')}}</span>
+    </span>
+    <span class="navbar-text small ml-auto">
+            operated by {{get('title')}} v{{get('version')}}
+    </span>
+    <!--        <a class="btn btn-outline-light my-2" id="button_update"
+           href="#">
+            Check for Updates
+        </a>-->
+</header>
+
+<br>
+<div class="container-fluid">
+
+    {{!header_row('Tor', 'Configuration')}}
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+            File Path
+        </div>
+        <div class="{{box_value_grid}}" id="torrcPath" style="overflow: hidden" title="{{get('torrc')}}">
+            <span id="torrcPathText" data-toggle="tooltip" title="Click to show in Explorer."></span>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+            torrc
+        </div>
+        <div class="{{box_value_grid}} form-group">
+            <textarea id='torrc' class="form-control" name="torrc"
+                      autocorrect="off" autocomplete="off" spellcheck="false" autocapitalize="off"
+                      style="font-family: monospace" rows="10">{{get('config')}}</textarea>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+    <div class="row">
+        <div class="{{box_datum_grid}}"></div>
+        <div class="{{box_value_grid}}">
+            <div class="btn-group">
+                <button type="button" id='btnSave' class="btn btn-primary">Save changes to torrc</button>
+                <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" type="button"
+                        id="ddSaveReload"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <button class="dropdown-item" id='btnSaveReload' type="button">
+                        Save changes to torrc, then reload it into Tor.
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+    <hr>
+
+    {{!header_row('Tor', 'Control')}}
+    <div class="row d-flex" style="align-items: center">
+        <div class="{{box_datum_grid}}"><span>Actions</span></div>
+        <div class="{{box_value_grid}}">
+            <button type="button" id="btnReload" class="btn btn-secondary">Reload Configuration</button>
+            <button type="button" id="btnRestart" class="btn btn-dark">Start Tor</button>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+<!--
+    <div class="row">
+        <div class="{{box_datum_grid}}">Feedback</div>
+        <div class="{{box_value_grid}}">OK</div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+-->
+
+    <hr>
+
+    {{!header_row('Tor', 'Log')}}
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+
+        </div>
+        <div class="{{box_value_grid}} form-group">
+                <textarea id='torlog' class="form-control" style="font-family: monospace; font-size: 9pt; color: white;
+                background-color: black;
+                    white-space: pre; overflow: scroll;" wrap="off" rows="20" readonly></textarea>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+            Remark
+        </div>
+        <div class="{{box_value_grid}} small">
+            By default - in the sense of 'if not explicitely configured to behave differently' - a Tor instance emits
+            log messages of level <code>notice</code> to <code>stdout</code>, a console window.
+            Those messages are displayed here.
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+    <hr>
+    <%
+
+    from theonionbox.tob.license import License
+    license = License()
+
+    version = get('version')
+    title = get('title')
+
+    %>
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                <a href="http://www.theonionbox.com/#readme" target="_blank">{{title}}</a> |
+                Version v{{version}} | Copyright &copy; 2019 - 2020 Ralph Wetzel | License:
+                <a role="button" data-toggle="collapse" href="#MIT"
+                   aria-expanded="false" aria-controls="MIT">MIT
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                Tor and the Tor Onion Logo are registered trademarks &reg of
+                <a href="https://torproject.org" target="_blank">The Tor Project</a>.
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                {{title}} uses the great <a href="https://latofonts.com" target="_blank">Lato</a> font. | Copyright
+                Łukasz Dziedzic | License:
+                <a href="http://scripts.sil.org/OFL" target="_blank">SIL Open Font License 1.1</a>.
+            </div>
+        </div>
+    </div>
+
+    <!--<div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                Icons from <a href="https://fontawesome.com" target="_blank">Font Awesome Free</a> | Copyright
+                @fontawesome | <a href="https://fontawesome.com/license/free" target="_blank">
+                License</a> @ Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT.
+            </div>
+        </div>
+    </div>-->
+
+    <div class="collapse" id="MIT">
+
+        <hr>
+
+        {{!header_row('', license.get('header'))}}
+        <div class='row'>
+            <div class='{{box_datum_grid}}'></div>
+            <div class='{{box_value_grid}} box_value_margin'>
+                Copyright &copy; {{get('copyright')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('1')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('2')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('3')}}
+            </div>
+        </div>
+        <hr>
+        {{!header_row('', 'Statement of Independence')}}
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('independence')}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+
+
+</body>
+
+<script>
+
+    var last_modified;
+
+    function query() {
+
+        var params = {
+            'url': '/data',
+            'data': 'action=control',
+            'headers': {
+                'if-none-match': last_modified,
+                'timeout': 1000
+            }
+        }
+
+        $.post(params)
+        .done(function (data, textStatus, response) {
+
+            if (response.status === 200) {
+
+                // Last-Modified date (ms precision) sent as ETag...
+                last_modified = response.getResponseHeader('ETag')
+                var d = JSON.parse(data)
+
+                for (var key in d) {
+                    if (!d.hasOwnProperty(key)) {
+                        //The current property is not a direct property of p
+                        continue;
+                    }
+
+                    if (key === 'messages') {
+                        var tl = $("#torlog");
+
+                        // If the textarea is initially scrolled to its bottom position...
+                        var at_the_bottom = (tl[0].scrollHeight - tl.scrollTop() - tl[0].clientHeight < 8);
+
+                        var msgs = d[key];
+                        if (msgs.length > 0) {
+                            var text = tl.val()
+                            if (text.length > 0) {
+                                text += '\r\n';
+                            }
+                            text += msgs.join('\r\n');
+                            tl.val(text);
+                            if (at_the_bottom) {
+                                // ... we scroll it there afterwards again.
+                                tl.scrollTop(tl[0].scrollHeight);
+                            }
+                        }
+                    }
+                    if (key === 'nickname') {
+                        $(".nickname").text(d[key]);
+                    }
+                    if (key === 'running') {
+                        var r = d[key];
+                        $("#btnReload").prop('disabled', !r);
+                        $("#ddSaveReload").prop('disabled', !r);
+                        $("#btnRestart").html(r ? 'Restart Tor' : 'Start Tor');
+                    }
+
+                }
+
+            }
+
+        });
+    }
+
+    var torrc_file_path = [];
+
+    $(window).on('resize', function() {
+        show_ellipsis_torrc_path();
+    })
+
+    function show_ellipsis_torrc_path() {
+
+        var tp = $("#torrcPath");
+        var w = tp.width();
+        var i = 0;
+
+        while (torrc_file_path[i]['width'] > w && i < torrc_file_path.length - 1) {
+            i += 1;
+        }
+
+        $("#torrcPathText").text(torrc_file_path[i]['path']);
+
+    }
+
+    function getTextWidth(text, font) {
+        // re-use canvas object for better performance
+        var canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+        var context = canvas.getContext("2d");
+        context.font = font;
+        var metrics = context.measureText(text);
+        return metrics.width;
+    }
+
+
+    $(window).on('load', function () {
+
+        setInterval(query, 2500);
+
+        var tt = $("#torrcPathText");
+        tt.tooltip();
+        tt.css('cursor', 'pointer');
+
+        var tp = $("#torrcPath");
+        var path = tp.attr('title').trim();
+        var font = tp.css('font')
+
+        width = getTextWidth(path, font)
+        torrc_file_path.push({'width': width, 'path': path})
+
+        path = path.split('\\');
+
+        var pos = null;
+        var length = path.length - 2
+
+        for (var i = 0; i < length; i++ ) {
+
+            // remove the ellipsis inserted an iteration before
+            if (pos) {
+                path.splice(pos, 1);
+            }
+
+            // calc position of the ellipsis
+            pos = Math.round((path.length - 1) / 2);
+
+            // set ellipsis
+            path[pos] = '...';
+            var epath = path.join('\\');
+
+            width = getTextWidth(epath, font)
+
+            torrc_file_path.push({'width': Math.round(width).toString(), 'path': epath});
+        }
+
+        // just use it now...
+        show_ellipsis_torrc_path();
+    });
+
+
+
+    $('#btnSave').on('click', function (event) {
+        event.preventDefault();
+
+        // var data = $('#torrc').serialize()
+        // data.push({'name': 'action', 'value': 'save'})
+
+        var params = {
+            'url': '/action',
+            'data': $('#torrc').serialize() + '&action=save'
+        }
+
+        console.log(params)
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+        }
+    )
+
+    $('#btnSaveReload').on('click', function (event) {
+        event.preventDefault();
+
+        // var data = $('#torrc').serialize()
+        // data.push({'name': 'action', 'value': 'save'})
+
+        var params = {
+            'url': '/action',
+            'data': $('#torrc').serialize() + '&action=savereload'
+        }
+
+        console.log(params)
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+        }
+    )
+
+
+    $('#btnReload').on('click', function (event) {
+        event.preventDefault();
+
+        // var data = $('#torrc').serialize()
+        // data.push({'name': 'action', 'value': 'save'})
+
+        var params = {
+            'url': '/action',
+            'data': 'action=reload'
+        }
+
+        console.log(params)
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+        }
+    )
+
+    $('#btnRestart').on('click', function (event) {
+        event.preventDefault();
+
+        // var data = $('#torrc').serialize()
+        // data.push({'name': 'action', 'value': 'save'})
+
+        var params = {
+            'url': '/action',
+            'data': 'action=restart'
+        }
+
+        console.log(params)
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+        }
+    )
+
+    $('#torrcPath').on('click', function(event) {
+        var params = {
+            'url': '/action',
+            'data': 'action=torrc'
+        }
+
+        console.log(params)
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+    })
+
+</script>
+
+</html>

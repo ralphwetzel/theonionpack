@@ -10,12 +10,14 @@ import random
 import subprocess
 import sys
 import tempfile
-from time import sleep, strftime, localtime
+from time import sleep, strftime, localtime, time
+from typing import Optional
 import threading
 import uuid
 import webbrowser
 import winreg
 
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock, Timeout
 from PIL import Image
@@ -52,21 +54,15 @@ class Pack:
         self.cwd = pathlib.WindowsPath(self.config['cwd'])
 
         self.status = 0
+        self.update_status = None
+        self.update_stamp = None
 
         # Hide the ConsoleWindow - if not in Debug or Trace mode!
         if hWnd and not (config['debug'] or config['trace']):
             user32.ShowWindow(hWnd, SW_HIDE)
 
-        # The AutoUpdate behaviour shall be persisted into the registry
-        # Default behavior ... in case we encounter issues when accessing the registry!
-        self.autoupdate = 'notify'
-        # Our registry key: Set 'autoupdate' to 'notify' if it doesn't exist!
-        with contextlib.suppress(OSError):
-            self.reg = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, 'TheOnionPack', access=winreg.KEY_ALL_ACCESS)
-            try:
-                self.autoupdate = winreg.QueryValue(self.reg, 'autoupdate')
-            except FileNotFoundError:
-                winreg.SetValue(self.reg, 'autoupdate', winreg.REG_SZ, self.autoupdate)
+        # The Version Management system
+        self.vm = VersionManager('127.0.0.1:9050', __stamp__)
 
         # Prepare Tor
         self.password = uuid.uuid4().hex
@@ -75,12 +71,19 @@ class Pack:
         # torrc
         torrc = pathlib.Path(config['data']) / 'torrc' / 'torrc'
         self.torrc = torrc.resolve()
+        if not self.torrc.exists():
+            self.torrc.parent.mkdir(parents=True, exist_ok=True)
+            self.torrc.touch()
 
         # The Onion Box
         self.box = box.TheOnionBox(config)
 
         # Stop signal, to terminate our run_loop
-        self.stop = threading.Event()
+        # self.stop = threading.Event()
+
+        # Our App ... to configure TOP & control Tor
+        from .app import App
+        self.app = App(self)
 
         # the Tray icon
         self.tray = pystray.Icon('theonionpack', title='The Onion Pack')
@@ -89,52 +92,20 @@ class Pack:
 
         self.tray.menu = pystray.Menu(
             pystray.MenuItem(
-                'Monitor...',
+                'Monitor',
                 action=self.on_monitor,
                 default=True
             ),
-            pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                'Relay Control',
-                pystray.Menu(
-                    pystray.MenuItem(
-                        'Edit configuration file...',
-                        action=self.on_open_torrc
-                    ),
-                    pystray.MenuItem(
-                        'Show logfile...',
-                        action=self.on_show_messages
-                    ),
-                    pystray.Menu.SEPARATOR,
-                    pystray.MenuItem(
-                        'Reload relay configuration',
-                        action=self.on_reload_config
-                    )
-                )
+                'Relay Control...',
+                action=self.on_control
             ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                'Updates',
-                pystray.Menu(
-                    pystray.MenuItem(
-                        'Show notification if update is available',
-                        checked=self.on_get_autupdate('notify'),
-                        radio=True,
-                        action=self.on_set_autoupdate('notify')
-                    ),
-                    pystray.MenuItem(
-                        'Perform auto update if update is available',
-                        checked=self.on_get_autupdate('auto'),
-                        radio=True,
-                        action=self.on_set_autoupdate('auto')
-                    ),
-                    pystray.Menu.SEPARATOR,
-                    pystray.MenuItem(
-                        'Check for update',
-                        action=self.on_check_update
-                    )
-                )
+                'Options...',
+                action=self.on_options
             ),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 'Stop!',
                 action=self.on_quit
@@ -183,76 +154,104 @@ class Pack:
 
         if running:
 
+            # Stop the TOP app
+            self.app.stop()
+
             # Stop theonionbox
             self.box.stop()
 
             # Tor has OwningControllerProcess defined ... thus will terminate as soon as we're done.
 
-            if self.status == 1:
-                MBox("Our instance of TheOnionBox terminated.\r\nThus we have to terminate as well! Sorry...",
+            if self.status:
+
+                reason = ['instance of TheOnionBox', 'App server']
+
+                MBox(f"Our {reason[self.status - 1]} terminated.\r\nThus we have to terminate as well! Sorry...",
                      style=0x10)
 
         if self.cron.running:
             self.cron.shutdown()
-        self.reg.Close()
+        # self.reg.Close()
         sys.exit(0)
 
     def run_loop(self, icon: pystray.Icon):
 
         icon.visible = True
 
-        while self.stop.is_set() is False:
-
+        # Monitor to check, if TOB still runs
+        # ... and to collect the messages of the relay monitored.
+        def _run_monitor():
             # quit if TheOnionBox died!
             if self.box.poll() is not None:
 
                 # indicate that the Box terminated!
-                self.status += 1
+                self.status = 1
                 self.do_quit()
                 return
 
             self.relay.collect_messages()
-            sleep(1)
+
+        self.cron.add_job(_run_monitor, 'interval', seconds=2)
+        self.app.run()
+
+        # if the app terminates ... we are going to terminate as well!
+        self.status = 2
+        self.do_quit()
 
     # Autoupdate
-    def check_update(self, by_user = False):
+    def check_update(self, mode: Optional[str] = None) -> int:
 
-        vm = VersionManager('127.0.0.1:9050', __stamp__)
-        if vm.update() is False:
+        if mode is None:
+            mode = self.app.autoupdate
 
-            if by_user:
+        if mode is None or mode == 'off':
+            with contextlib.suppress(JobLookupError):
+                self.cron.remove_job(job_id='updater')
+            if self.update_status is None:
+                self.update_status = 0
+            return False
+
+        self.update_stamp = datetime.datetime.fromtimestamp(time()).strftime('%Y-%m-%d %H:%M:%S')
+        self.update_status = 3  # Checking: This triggers a spinner @ the client.
+
+        if self.vm.update() is False:
+
+            if mode == 'user':
                 message = 'I failed to check for updates of The Onion Pack. Please retry later.'
                 self.tray.notify(message)
             else:
                 self.cron.add_job(self.check_update,
                                   'date',
-                                  run_date=datetime.datetime.now() + datetime.timedelta(seconds=10)
+                                  run_date=datetime.datetime.now() + datetime.timedelta(seconds=10),
+                                  id='updater',
+                                  replace_existing=True
                                   )
 
+            self.update_status = -1     # Error
             return False
 
         update = []
 
         v = self.relay.version
-        if v and vm.Tor.version and v < vm.Tor.version:
+        if v and self.vm.Tor.version and v < self.vm.Tor.version:
             update.append('the Tor Windows Expert Bundle')
 
         v = self.relay.obfs.version
-        if v and vm.obfs.version and v < vm.obfs.version:
+        if v and self.vm.obfs.version and v < self.vm.obfs.version:
             update.append('obfs4proxy')
 
         v = self.box.version
-        if v and vm.Box.latest_version and v < vm.Box.version:
+        if v and self.vm.Box.latest_version and v < self.vm.Box.version:
             update.append('The Onion Box')
 
         v = self.version
-        if v and vm.Pack.version and v < vm.Pack.version:
+        if v and self.vm.Pack.version and v < self.vm.Pack.version:
             update.append('The Onion Pack')
 
         if len(update) > 0:
 
             # If this check was issued by a user, we only show a notification!
-            mode = 'notify' if by_user else self.autoupdate
+            run_mode = 'notify' if mode == 'user' else mode
 
             run = {
                 'auto': " I'm going to download and run my latest installer now - to perform the update.",
@@ -265,11 +264,12 @@ class Pack:
             else:
                 message = f'There is an update available for {update[0]}.'
 
-            if (256 - len(run[mode])) < len(message):
+            if (256 - len(run[run_mode])) < len(message):
                 message = "There are several updates available."
 
-            message += run[mode]
+            message += run[run_mode]
             self.tray.notify(message)
+            self.update_status = 2      # Update found
 
             if mode == 'auto':
                 if self.get_latest_pack():
@@ -279,20 +279,31 @@ class Pack:
 
         else:
 
-            message = "No updates available!" if by_user else ''    # remove any message!
+            message = "No updates available!" if mode == 'user' else ''    # remove any message!
             self.tray.notify(message)
+            self.update_status = 1      # checked, no update
 
-        if not by_user:
+        if mode != 'user':
             self.cron.add_job(self.check_update,
                               'date',
-                              run_date=datetime.datetime.now() + datetime.timedelta(minutes=random.randrange(30, 60))
+                              run_date=datetime.datetime.now() + datetime.timedelta(minutes=random.randrange(30, 60)),
+                              id='updater',
+                              replace_existing=True
                               )
 
-        return False
+        return self.update_status
 
     # Tray menu actions
     def on_monitor(self, icon, item):
         webbrowser.open_new_tab('http://127.0.0.1:8080/')
+
+    def on_control(self, icon, item):
+        port = self.app.port
+        webbrowser.open_new_tab(f'http://127.0.0.1:{port}/control')
+
+    def on_options(self, icon, item):
+        port = self.app.port
+        webbrowser.open_new_tab(f'http://127.0.0.1:{port}/options')
 
     def on_quit(self, icon, item):
         self.do_quit()
@@ -300,88 +311,12 @@ class Pack:
     def do_quit(self):
 
         # Stop the run_loop
-        self.stop.set()
+        # self.stop.set()
 
         # Stop the Tray
         self.tray.stop()
 
         # cleanup is being performed in self.run()
-
-    # def get_tor_messages(self):
-    #     while True:
-    #         self.relay.collect_messages()
-    #         sleep(5)
-
-    def on_show_messages(self, icon, item):
-        fd, name = tempfile.mkstemp(prefix="Tor_", suffix='.html', text=True)
-        with open(fd, 'w') as tmp:
-            tmp.write('<br>'.join(self.relay.messages))
-        webbrowser.open_new_tab(name)
-
-    def on_open_torrc(self):
-
-        def get_default_windows_app(suffix):
-
-            class_root = winreg.QueryValue(winreg.HKEY_CLASSES_ROOT, suffix)
-            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r'{}\shell\open\command'.format(class_root)) as key:
-                command = winreg.QueryValueEx(key, '')[0]
-                return command.split(' ')[0]
-
-        if not self.torrc.exists():
-            self.torrc.parent.mkdir(parents=True, exist_ok=True)
-            self.torrc.touch()
-
-        path = get_default_windows_app('.txt')
-        subprocess.Popen([os.path.expandvars(path), str(self.torrc)])
-
-    def on_reload_config(self):
-
-        controller = None
-        try:
-            controller = SimplePort('127.0.0.1', 9051)
-        except Exception:
-            MBox('Failed to connect to the local Tor relay.', style=0x10)
-
-        if controller is None:
-            return
-
-        ok = ''
-        try:
-            ok = controller.msg(f'AUTHENTICATE "{self.password}"')
-        except:
-            if ok != '250 OK':
-                MBox('Failed to authenticate against local Tor relay.', style=0x10)
-                controller.shutdown()
-                return
-
-        ok = ''
-        try:
-            ok = controller.msg("SIGNAL RELOAD")
-        except:
-            if ok != '250 OK':
-                MBox('Failed to reload the Tor relay configuration.', style=0x10)
-
-        controller.shutdown()
-        return
-
-    def on_get_autupdate(self, status):
-        def get_autoupdate(item):
-            try:
-                v = winreg.QueryValue(self.reg, 'autoupdate')
-            except:
-                return self.autoupdate == status
-            return v == status
-        return get_autoupdate
-
-    def on_set_autoupdate(self, status):
-        def set_autoupdate(item):
-            with contextlib.suppress(Exception):
-                winreg.SetValue(self.reg, 'autoupdate', winreg.REG_SZ, status)
-            self.autoupdate = status
-        return set_autoupdate
-
-    def on_check_update(self, icon, item):
-        self.check_update(by_user=True)
 
     @property
     def version(self):
@@ -402,6 +337,33 @@ class Pack:
 
     def get_latest_pack(self):
 
+        url = self.get_updater_url()
+
+        if url is not None:
+
+            file = tempfile.NamedTemporaryFile(suffix='.exe', delete=False)
+
+            r = requests.get(url, stream=True)
+            for chunk in r.iter_content(chunk_size=512):
+                if chunk:  # filter out keep-alive new chunks
+                    file.write(chunk)
+
+            file.close()
+
+            params = [file.name]
+            params.append('/SILENT')
+            # params.append('/VERYSILENT')
+            params.append('/LOG')
+            params.append('/SUPPRESSMSGBOXES')
+            params.append('/TASKS="startup,obfs4proxy"')
+            subprocess.Popen(params, close_fds=True, creationflags=subprocess.DETACHED_PROCESS + subprocess.CREATE_NEW_PROCESS_GROUP)
+            return True
+
+        return False
+
+    @staticmethod
+    def get_updater_url() -> Optional[str]:
+
         headers = {'accept-encoding': 'gzip'}
         address = '//api.github.com/repos/ralphwetzel/theonionpack/releases/latest'
 
@@ -414,39 +376,18 @@ class Pack:
         except:
             pass
 
-        if r is None:
-            return False
+        if r is None or r.status_code != requests.codes.ok:
+            return None
 
-        if r.status_code == requests.codes.ok:
-            json = r.json()
-            assets = json.get('assets', None)
+        json = r.json()
+        assets = json.get('assets', None)
 
-            url = None
-            for a in assets:
-                name = a.get('name', None)
-                if name == 'TheOnionPack.exe':
-                    url = a.get('browser_download_url', None)
-                    if url is not None:
-                        break
+        url = None
+        for a in assets:
+            name = a.get('name', None)
+            if name == 'TheOnionPack.exe':
+                url = a.get('browser_download_url', None)
+                if url is not None:
+                    break
 
-            if url is not None:
-
-                file = tempfile.NamedTemporaryFile(suffix='.exe', delete=False)
-
-                r = requests.get(url, stream=True)
-                for chunk in r.iter_content(chunk_size=512):
-                    if chunk:  # filter out keep-alive new chunks
-                        file.write(chunk)
-
-                file.close()
-
-                params = [file.name]
-                params.append('/SILENT')
-                # params.append('/VERYSILENT')
-                params.append('/LOG')
-                params.append('/SUPPRESSMSGBOXES')
-                params.append('/TASKS="startup,obfs4proxy"')
-                subprocess.Popen(params, close_fds=True, creationflags=subprocess.DETACHED_PROCESS + subprocess.CREATE_NEW_PROCESS_GROUP)
-                return True
-
-        return False
+        return url

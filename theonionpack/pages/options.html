@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{get('title')}}</title>
+</head>
+
+<%
+from theonionbox.tob.template_tools import header_row, standard_row, box_datum_grid, box_value_grid, box_right_grid
+
+
+def status_text(status):
+    text = [
+        'Failed to check for updates.',
+        'Not checked so far.',
+        'Your versions are up-to-date.',
+        'Update available.'
+    ]
+    return text[status + 1]
+end
+
+%>
+
+<script
+        src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+<link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+
+<link rel="stylesheet" href="latolatin/latolatinfonts.css">
+
+<style>
+    header {
+        background-color: rgba(132, 54, 187, 100);
+        color: white;
+    }
+
+    header .navbar-brand {
+        font-family: "LatoLatinWebSemiBold", sans-serif;
+        color: white;
+        text-shadow: 1px 1px 2px #23300e;
+    }
+
+    .box_bold {
+        font-family: "LatoLatinWebBlack";
+        font-size: 36px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_section {
+        font-family: "LatoLatinWebLight";
+        font-size: 36px;
+        text-align: left;
+    }
+
+    .box_datum {
+        font-family: "LatoLatinWebLight";
+        font-size: 19px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_datum_bold {
+        font-family: "LatoLatinWebBlack";
+        font-size: 19px;
+        text-align: right;
+        min-width: 200px;
+    }
+
+    .box_datum_modal {
+        font-family: "LatoLatinWebLight";
+        font-size: 19px;
+        text-align: right;
+    }
+
+    .box_value {
+        font-family: "LatoLatinWeb";
+        font-size: 19px;
+        text-align: left;
+
+    }
+
+    code {
+        font-family: monospace;
+        color: dimgrey;
+    }
+
+    .lds-ellipsis {
+        display: block;
+        position: relative;
+        top: 20%;
+        /*width: 80px;*/
+        /*height: 80px;*/
+    }
+
+    .lds-ellipsis div {
+        position: absolute;
+        /*top: 33px;*/
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        /*background: #fff;*/
+        background-color: black;
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+    }
+
+    .lds-ellipsis div:nth-child(1) {
+        /*left: 8px;*/
+        animation: lds-ellipsis1 0.6s infinite;
+    }
+
+    .lds-ellipsis div:nth-child(2) {
+        /*left: 8px;*/
+        animation: lds-ellipsis2 0.6s infinite;
+    }
+
+    .lds-ellipsis div:nth-child(3) {
+        /*left: 32px;*/
+        left: 24px;
+        animation: lds-ellipsis2 0.6s infinite;
+    }
+
+    .lds-ellipsis div:nth-child(4) {
+        /*left: 56px;*/
+        left: 48px;
+        animation: lds-ellipsis3 0.6s infinite;
+    }
+
+    @keyframes lds-ellipsis1 {
+        0% {
+            transform: scale(0);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes lds-ellipsis3 {
+        0% {
+            transform: scale(1);
+        }
+        100% {
+            transform: scale(0);
+        }
+    }
+
+    @keyframes lds-ellipsis2 {
+        0% {
+            transform: translate(0, 0);
+        }
+        100% {
+            transform: translate(24px, 0);
+        }
+    }
+
+
+
+
+</style>
+
+<body>
+
+<header class="navbar navbar-expand d-flex" style="align-items: center">
+    <span class="navbar-brand" aria-label="The Onion Pack">
+        <img class="my-auto" src="logo.ico" alt="Logo" width="24px" height="24px">
+        <span class="navbar-brand h1 mb-0 nickname">{{get('title')}} | Options</span>
+    </span>
+    <span class="navbar-text small ml-auto mr-2">
+        v{{get('version')}}
+    </span>
+    <button class="btn btn-outline-light" id="btnCheckUpdate">
+        Check for Updates
+    </button>
+</header>
+
+<br>
+<div class="container-fluid">
+
+    {{!header_row('Pack', 'Versions')}}
+
+<%
+
+    def make_version(field):
+
+        version = get(field, None)
+
+        if version is None:
+            version = 'N/A'
+        else:
+            if version[-1] == 0:
+                version.pop()
+            end
+            version = f"{('.').join(str(v) for v in version)}"
+        end
+
+        return version
+
+    end
+
+    versions = {
+        'pack': 'The Onion Pack',
+        'box': 'The Onion Box',
+        'tor': 'Tor Windows Expert Bundle',
+        'obfs': 'obfs4proxy'
+    }
+%>
+    % for tag, datum in versions.items():
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+                {{datum}}
+            </div>
+            <div id="{{tag}}_version" class="{{box_value_grid}}">
+                {{make_version(tag)}}
+            </div>
+            <div class="{{box_right_grid}}"></div>
+        </div>
+    % end
+
+    <hr>
+
+    {{!header_row('Pack', 'Updates')}}
+
+    <div class="row d-flex" style="align-items: center">
+        <div class="{{box_datum_grid}}">
+            <span>Check for Updates</span></div>
+        <div class="{{box_value_grid}} my-1">
+            <input id="DoUpdate" class="form-check-input" type="checkbox" value="" data-size="small"
+                   data-toggle="toggle" data-on="Regularly" data-off="Never"
+            % update=get('update', 'off')
+            % if update != 'off':
+                checked
+            % end
+            >
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+    <div class="row d-flex" style="align-items: center">
+        <div class="{{box_datum_grid}}">
+            <span>If update available</span></div>
+        <div class="{{box_value_grid}} my-1 text-nowrap">
+            <input id="UpdateAction" class="form-check-input" type="checkbox" value="" data-size="small" data-width="135"
+                   data-toggle="toggle" data-on="Perform update" data-off="Show notification"
+
+            % if update == 'auto':
+                checked
+            % end
+            >
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+            Latest Check
+        </div>
+        <div id="check_stamp" class="{{box_value_grid}}">
+            % lc = get('stamp', None)
+            {{lc if lc is not None else 'Never'}}
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+            Status
+        </div>
+        <div id="check_status" class="{{box_value_grid}}">
+            <div class='lds-ellipsis'><div></div><div></div><div></div><div></div></div>
+        </div>
+        <div class="{{box_right_grid}}"></div>
+    </div>
+
+
+    <hr>
+
+<%
+
+    from theonionbox.tob.license import License
+    license = License()
+
+    version = get('version')
+    title = get('title')
+
+    %>
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                <a href="https://www.github.com/ralphwetzel/theonionpack#readme" target="_blank">{{title}}</a> |
+                Version v{{version}} | Copyright &copy; 2019 - 2020 Ralph Wetzel | License:
+                <a role="button" data-toggle="collapse" href="#MIT"
+                   aria-expanded="false" aria-controls="MIT">MIT
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                Tor and the Tor Onion Logo are registered trademarks &reg of
+                <a href="https://torproject.org" target="_blank">The Tor Project</a>.
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                {{title}} uses the great <a href="https://latofonts.com" target="_blank">Lato</a> font. | Copyright
+                Łukasz Dziedzic | License:
+                <a href="http://scripts.sil.org/OFL" target="_blank">SIL Open Font License 1.1</a>.
+            </div>
+        </div>
+    </div>
+
+    <!--<div class="row">
+        <div class="{{box_datum_grid}}">
+        </div>
+        <div class="{{box_value_grid}}">
+            <div style="color: grey; font-size: 10px; font-weight: 300">
+                Icons from <a href="https://fontawesome.com" target="_blank">Font Awesome Free</a> | Copyright
+                @fontawesome | <a href="https://fontawesome.com/license/free" target="_blank">
+                License</a> @ Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT.
+            </div>
+        </div>
+    </div>-->
+
+    <div class="collapse" id="MIT">
+
+        <hr>
+
+        {{!header_row('', license.get('header'))}}
+        <div class='row'>
+            <div class='{{box_datum_grid}}'></div>
+            <div class='{{box_value_grid}} box_value_margin'>
+                Copyright &copy; {{get('copyright')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('1')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('2')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('3')}}
+            </div>
+        </div>
+        <hr>
+        {{!header_row('', 'Statement of Independence')}}
+        <div class="row">
+            <div class="{{box_datum_grid}}">
+            </div>
+            <div class="{{box_value_grid}} box_value_margin">
+                {{license.get('independence')}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+
+
+</body>
+
+<script>
+
+    var last_modified;
+    var last_check = null;
+    var latest_status = null;
+
+    function generate_check_status(status) {
+
+        if (status === latest_status) {
+            return
+        }
+
+        var cs = $('#check_status');
+        cs.empty();
+
+        switch (status + 1) {
+            case 0:
+                cs.text('Failed to check for updates.');
+                break;
+            case 1:
+                cs.text('Not checked so far.');
+                break;
+            case 2:
+                cs.text('Your versions are up-to-date.');
+                break;
+            case 3:
+                cs.html("<span id='get_updater' " +
+                    "data-toggle='tooltip' title='Click to download updater.' " +
+                    "style='text-decoration: underline;'>" +
+                    "Update" +
+                    "</span> available.")
+                var gu = $('#get_updater');
+                gu.tooltip();
+                gu.css('cursor', 'pointer');
+                gu.on('click', function () {
+                    var params = {
+                        'url': '/action',
+                        'data': 'action=get_updater'
+                    }
+
+                    $.post(params)
+                        .done(function (data, textStatus, response) {
+                            var url = JSON.parse(data);
+                            window.location = url;
+                        });
+                });
+                break;
+            case 4:
+                cs.html("<div class='lds-ellipsis'><div></div><div></div><div></div><div></div></div>")
+        }
+
+        latest_status = status;
+
+    }
+
+    function make_version(version) {
+        if (!version) {
+            return 'N/A'
+        }
+
+        if (version[version.length - 1] === 0) {
+            version.pop()
+        }
+
+        return version.join('.')
+    }
+
+    function query() {
+
+        console.log('query');
+
+        var params = {
+            'url': '/data',
+            'data': 'action=options',
+            'headers': {
+                'if-none-match': last_modified,
+                'timeout': 1000
+            }
+        }
+
+        $.post(params)
+        .done(function (data, textStatus, response) {
+
+            if (response.status === 200) {
+
+                var d = JSON.parse(data)
+
+                console.log(d)
+
+                for (var key in d) {
+                    if (!d.hasOwnProperty(key)) {
+                        //The current property is not a direct property of p
+                        continue;
+                    }
+
+                    if (key === 'update') {
+                        var s = d[key];
+                        if (['off', 'notify', 'auto'].indexOf(s) >= 0) {
+                            $('#DoUpdate').prop('checked', s !== 'off');
+                            $('#UpdateAction').prop('checked', s === 'auto');
+                        }
+                    }
+                    if (key === 'stamp') {
+                        last_check = d[key];
+                        $('#check_stamp').text(last_check ? last_check : 'Never');
+
+                    }
+                    if (key === 'status') {
+                        generate_check_status(d[key]);
+                    }
+                    if (['pack', 'box', 'tor', 'obfs'].indexOf(key) >= 0) {
+
+                        console.log(d[key])
+
+                        var versions = d[key]
+
+                        v0 = make_version(versions[0])
+                        v1 = make_version(versions[1])
+
+                        if (versions.length < 2 || !versions[0] || !versions[1] || v0 === v1) {
+                            $('#' + key + '_version').text(v0);
+                        }
+                        else {
+                            $('#' + key + '_version').text(v0 + ' -> ' + v1);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    $(window).on('load', function () {
+
+        % print(get('status'))
+
+        setInterval(query, 2500);
+        generate_check_status( {{get('status', 0)}} );
+
+
+        var status = $('#DoUpdate').prop('checked')
+        var ua = $('#UpdateAction');
+        if (status === false) {
+            ua.bootstrapToggle('disable');
+            ua.css('cursor', 'default');
+        }
+        else {
+            ua.bootstrapToggle('enable');
+        }
+
+    });
+
+
+    $('#DoUpdate').on('change', function() {
+        var action;
+        var ua = $('#UpdateAction');
+        var status = $(this).prop('checked')
+        if (status === false) {
+            action = 'off';
+            ua.bootstrapToggle('disable');
+            ua.css('cursor', 'default');
+        }
+        else {
+            ua.bootstrapToggle('enable');
+            action = ua.prop('checked') ? 'auto' : 'notify'
+            ua.css('cursor', 'pointer');
+        }
+
+        var params = {
+            'url': '/action',
+            'data': 'action=update&status=' + action
+        }
+
+        $.post(params)
+
+    })
+
+    $('#UpdateAction').on('change', function () {
+
+        var params = {
+            'url': '/action',
+            'data': 'action=update&status=' + ($(this).prop('checked') ? 'auto' : 'notify')
+        }
+
+        console.log(params)
+        $.post(params)
+
+    })
+
+
+    $('#btnCheckUpdate').on('click', function (event) {
+        event.preventDefault();
+
+        // var data = $('#torrc').serialize()
+        // data.push({'name': 'action', 'value': 'save'})
+
+        var params = {
+            'url': '/action',
+            'data': 'action=check_update'
+        }
+
+        $.post(params)
+            .done(function (data, textStatus, response) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(response);
+            });
+        }
+    )
+
+</script>
+
+</html>
