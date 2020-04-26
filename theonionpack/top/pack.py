@@ -241,7 +241,7 @@ class Pack:
             update.append('obfs4proxy')
 
         v = self.box.version
-        if v and self.vm.Box.latest_version and v < self.vm.Box.version:
+        if v and self.vm.Box.version and v < self.vm.Box.version:
             update.append('The Onion Box')
 
         v = self.version

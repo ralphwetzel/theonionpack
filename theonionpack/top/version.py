@@ -231,7 +231,7 @@ class VersionManager(object):
 
         _obfs = back.get('obfs', None)
         if _obfs is not None:
-            self.obfs.version = _obfs.get('pack', None)
+            self.obfs.version = _obfs.get('pack', None)     # obfs4proxy within TheOnionPack == 'pack'
 
         self.lmc.last_mod_header = r.headers.get('Last-Modified', '')
 
