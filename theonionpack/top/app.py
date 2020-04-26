@@ -1,4 +1,3 @@
-import bottle
 import contextlib
 import json
 import pathlib
@@ -6,6 +5,8 @@ import socket
 import subprocess
 import time
 import winreg
+
+import bottle
 
 import theonionbox.tob.libraries.latolatin as latolatin_tob
 from .libraries import LatoLatin
