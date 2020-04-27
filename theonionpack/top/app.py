@@ -235,6 +235,7 @@ class App:
     def stop(self):
         if self.server is not None:
             self.server.shutdown()
+            self.server = None
 
         self.reg.Close()
 

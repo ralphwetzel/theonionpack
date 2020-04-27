@@ -79,7 +79,7 @@ class Pack:
         self.box = box.TheOnionBox(config)
 
         # Stop signal, to terminate our run_loop
-        # self.stop = threading.Event()
+        self.stop = threading.Event()
 
         # Our App ... to configure TOP & control Tor
         from .app import App
@@ -154,7 +154,7 @@ class Pack:
 
         if running:
 
-            # Stop the TOP app
+            # Stop the TOP app (in case not stopped already in do_quit)
             self.app.stop()
 
             # Stop theonionbox
@@ -182,21 +182,25 @@ class Pack:
         # ... and to collect the messages of the relay monitored.
         def _run_monitor():
             # quit if TheOnionBox died!
-            if self.box.poll() is not None:
 
-                # indicate that the Box terminated!
-                self.status = 1
-                self.do_quit()
-                return
+            if not self.stop.is_set():
+                if self.box.poll() is not None:
 
-            self.relay.collect_messages()
+                    # indicate that the Box terminated!
+                    self.status = 1
+                    self.do_quit()
+                    return
+
+                self.relay.collect_messages()
 
         self.cron.add_job(_run_monitor, 'interval', seconds=2)
-        self.app.run()
 
-        # if the app terminates ... we are going to terminate as well!
-        self.status = 2
-        self.do_quit()
+        try:
+            self.app.run()
+        except:
+            # if the app terminates ... we are going to terminate as well!
+            self.status = 2
+            self.do_quit()
 
     # Autoupdate
     def check_update(self, mode: Optional[str] = None) -> int:
@@ -295,7 +299,7 @@ class Pack:
 
     # Tray menu actions
     def on_monitor(self, icon, item):
-        webbrowser.open_new_tab('http://127.0.0.1:8080/')
+pr        webbrowser.open_new_tab('http://127.0.0.1:8080/')
 
     def on_control(self, icon, item):
         port = self.app.port
@@ -310,8 +314,12 @@ class Pack:
 
     def do_quit(self):
 
-        # Stop the run_loop
-        # self.stop.set()
+        # indicate that the stop procedure has been launched
+        self.stop.set()
+
+        # Stop the app
+        # -> This is mandatory prerequisite to stop the tray!!
+        self.app.stop()
 
         # Stop the Tray
         self.tray.stop()
