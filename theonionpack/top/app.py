@@ -182,14 +182,23 @@ class App:
                 bottle.response.set_header(header, value)
 
         if action in ['options']:
+
+            def bundle_versions(current, latest):
+                rv = [current]
+                if latest is None:
+                    return rv
+                if current is None or latest > current:
+                    rv.append(latest)
+                return rv
+
             retval = {
                 'update': self.autoupdate
                 , 'stamp': self.pack.update_stamp
                 , 'status': self.pack.update_status
-                , 'pack': [self.pack.version, self.pack.vm.Pack.version]
-                , 'box': [self.pack.box.version, self.pack.vm.Box.version]
-                , 'tor': [self.pack.relay.version, self.pack.vm.Tor.version]
-                , 'obfs': [self.pack.relay.obfs.version, self.pack.vm.obfs.version]
+                , 'pack': bundle_versions(self.pack.version, self.pack.vm.Pack.version)
+                , 'box': bundle_versions(self.pack.box.version, self.pack.vm.Box.version)
+                , 'tor': bundle_versions(self.pack.relay.version, self.pack.vm.Tor.version)
+                , 'obfs': bundle_versions(self.pack.relay.obfs.version, self.pack.vm.obfs.version)
             }
 
         return json.JSONEncoder().encode(retval)

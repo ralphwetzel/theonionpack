@@ -502,19 +502,13 @@ end
                     }
                     if (['pack', 'box', 'tor', 'obfs'].indexOf(key) >= 0) {
 
-                        console.log(d[key])
-
                         var versions = d[key]
 
-                        v0 = make_version(versions[0])
-                        v1 = make_version(versions[1])
-
-                        if (versions.length < 2 || !versions[0] || !versions[1] || v0 === v1) {
-                            $('#' + key + '_version').text(v0);
+                        var v = make_version(versions[0])
+                        if (versions.length > 1) {
+                            v += ' -> ' + make_version(versions[1])
                         }
-                        else {
-                            $('#' + key + '_version').text(v0 + ' -> ' + v1);
-                        }
+                        $('#' + key + '_version').text(v);
                     }
                 }
             }
