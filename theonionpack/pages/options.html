@@ -518,8 +518,6 @@ end
 
     $(window).on('load', function () {
 
-        % print(get('status'))
-
         setInterval(query, 2500);
         generate_check_status( {{get('status', 0)}} );
 
