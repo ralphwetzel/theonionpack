@@ -299,7 +299,7 @@ class Pack:
 
     # Tray menu actions
     def on_monitor(self, icon, item):
-pr        webbrowser.open_new_tab('http://127.0.0.1:8080/')
+        webbrowser.open_new_tab('http://127.0.0.1:8080/')
 
     def on_control(self, icon, item):
         port = self.app.port
