@@ -129,20 +129,14 @@ class Pack:
                 self.relay.run(password=self.password)
 
                 running = True
+                self.cron.start()
 
-                # launch the AutoUpdater
-                if self.check_update() is False:
+                # run the Tray icon
+                # !! This is a blocking call !!
+                self.tray.run(self.run_loop)
 
-                    # If True, we've already launched an AutoUpdate!
-
-                    self.cron.start()
-
-                    # run the Tray icon
-                    # !! This is a blocking call !!
-                    self.tray.run(self.run_loop)
-
-                    # the block may be released by self.on_quit, issued by an operator via the Tray
-                    # ... or by a system command (like SIGTERM).
+                # the block may be released by self.on_quit, issued by an operator via the Tray
+                # ... or by a system command (like SIGTERM).
 
         except Timeout:
             MBox("It seems like another instance of The Onion Pack is already running. Aborting launch procedure...",
@@ -195,6 +189,9 @@ class Pack:
 
         self.cron.add_job(_run_monitor, 'interval', seconds=2)
 
+        # launch the AutoUpdater
+        self.check_update()
+
         try:
             self.app.run()
         except:
@@ -203,7 +200,7 @@ class Pack:
             self.do_quit()
 
     # Autoupdate
-    def check_update(self, mode: Optional[str] = None) -> int:
+    def check_update(self, mode: Optional[str] = None) -> bool:
 
         if mode is None:
             mode = self.app.autoupdate
@@ -276,10 +273,14 @@ class Pack:
             self.update_status = 2      # Update found
 
             if mode == 'auto':
+                self.update_status = 4  # Update found, trying to run auto-update
                 if self.get_latest_pack():
                     sleep(2)
                     self.do_quit()
-                    return True
+                else:
+                    self.update_status = 2  # Update found
+
+                return True
 
         else:
 
@@ -295,7 +296,7 @@ class Pack:
                               replace_existing=True
                               )
 
-        return self.update_status
+        return self.update_status == 2
 
     # Tray menu actions
     def on_monitor(self, icon, item):
