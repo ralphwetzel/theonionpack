@@ -52,7 +52,7 @@ By intension the Tor instance **initially** installed by The Onion Pack is **not
 If you deliberately decide to establish a relay, edit the configuration file: **Tray menu > Relay Control**  
 This will open the Relay Control page. The first section of this page provides an editor to manipulate your *torrc*.
 
-<p align="center"><img src="documentation/torconfig.png" width="50%" style="border-color: gray"></p>
+<p align="center"><img src="documentation/torconfig.png" width="75%" style="border-color: gray"></p>
 
 Prerequisite to become a relay is the definition of an [*ORPort*](https://2019.www.torproject.org/docs/tor-manual.html.en#ORPort) :
 ```
@@ -83,10 +83,10 @@ You may & should define further configuration parameters ... and if done, <span 
 
 To enable this configuration, you need to tell your Tor node to reload it's configuration file. You may do this with the control buttons in section `Tor|Control`:
 
-<p align="center"><img src="documentation/torcontrol.png" width="50%" style="border-color: gray"></p>
+<p align="center"><img src="documentation/torcontrol.png" width="75%" style="border-color: gray"></p>
 
 
-Afterwards you may either check the logfile of your relay @ section `Tor|Log` or open the dashboard to monitor your relay: **Tray menu > Monitor...**
+Afterwards you may either check the logfile of your relay @ section `Tor|Log` or open the dashboard to monitor your relay: **Tray menu > Monitor**
 
 > By default - in the sense of 'if not explicitely configured to behave differently' - a Tor instance emits log messages of level notice to stdout, a console window. Those messages are displayed in section `Tor|Log`.
 
@@ -94,11 +94,14 @@ Afterwards you may either check the logfile of your relay @ section `Tor|Log` or
 
 **Tray menu > Options...** allows you to alter the mode of operation of your Onion Pack.
 
+<p align="center"><img src="documentation/topoptions.png" width="75%" style="border-color: gray"></p>
+
+
 Section `Pack|Versions` displays the version numbers of the four software packages managed by The Onion Pack.
 
 Section `Pack|Updates` lets you define, if The Onion Pack shall search for updates *Never* or *Regularly*. If an opportunity for an update was found, The Onion Pack may either just *Show a notification* or download the installer and *Perform the update*.
 
-You may as well trigger an update check manually.
+You may as well trigger a `Check for Updates` manually.
 
 Have fun!
 
