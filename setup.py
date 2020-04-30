@@ -344,7 +344,7 @@ setup(
     install_requires=[
         'theonionbox>=20.1',
         'pystray',
-        'shelljob',
+        'shelljob==0.5.6',  # 0.5.8  fails to install!
         'filelock'
     ],
     long_description_content_type='text/x-rst; charset=UTF-8',
