@@ -70,8 +70,12 @@ class Tor:
         self.obfs = obfs4Proxy(find('obfs4proxy.exe', tor))
 
         self.last_modified = 0
+        self.socks_or_control_warning = False
 
-    def run(self, owner_pid: int = os.getpid(), password: str = None, additional_command_line: typing.List[str] = None):
+    def run(self,
+            owner_pid: int = os.getpid(),
+            password: str = None,
+            additional_command_line: typing.List[str] = None):
 
         if self.running:
             raise OSError('Already running...')
@@ -91,6 +95,31 @@ class Tor:
         self.owner = owner_pid
         params = [str(self.path)]
 
+        torrc_path = str((pathlib.Path(self.data) / 'torrc/torrc').resolve())
+        params.extend(['-f', torrc_path])
+
+        # we have to disable our SocksPort & ControlPort, if == 0 is defined in the config file!
+        try:
+            with open(torrc_path, 'r') as f:
+                t = f.readlines()
+        except:
+            t = []
+
+        torrc = [tt.strip() for tt in t]
+        torrc = '\n'.join(torrc)
+
+        self.socks_or_control_warning = False
+        re.IGNORECASE = True
+        if re.search('socksport 0', torrc) is None:
+            params.extend(['+__SocksPort', '9050'])
+        else:
+            self.socks_or_control_warning = True
+
+        if re.search('controlport 0', torrc) is None:
+            params.extend(['+__ControlPort', '9051'])
+        else:
+            self.socks_or_control_warning = True
+
         if self.owner > 0:
             params.extend(['__OwningControllerProcess', str(owner_pid)])
 
@@ -99,15 +128,11 @@ class Tor:
         if self.geoIP6:
             params.extend(['GeoIPv6File', self.geoIP6])
 
-        params.extend(['+__ControlPort', '9051'])
-        params.extend(['+__SocksPort', '9050'])
-
         if self.password is not None:
-            params.extend(['__HashedControlSessionPassword', self.password])
+            params.extend(['+__HashedControlSessionPassword', self.password])
 
         params.extend(['DataDirectory', self.data])
 
-        params.extend(['-f', str((pathlib.Path(self.data) / 'torrc/torrc').resolve())])
         params.extend(['--defaults-torrc', str((pathlib.Path(self.data) / 'torrc/torrc-defaults').resolve())])
         params.extend(['--ignore-missing-torrc'])
 

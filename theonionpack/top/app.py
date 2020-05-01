@@ -5,6 +5,7 @@ import socket
 import subprocess
 import time
 import winreg
+import urllib.parse
 
 import bottle
 
@@ -99,9 +100,12 @@ class App:
 
         try:
             with open(self.torrc, 'r') as f:
-                config = f.read()
+                c = f.readlines()
         except:
-            config = ''
+            c = []
+
+        config = [cc.strip() for cc in c]
+        print(config)
 
         params = {
             'version': self.version
@@ -110,6 +114,8 @@ class App:
             , 'torrc': self.torrc
             , 'config': config
             , 'nickname': self.nickname
+            , 'running': self.tor.running
+            , 'warning': self.tor.socks_or_control_warning
         }
         page = self.cwd / 'pages' / 'control.html'
         return bottle.template(str(page), **params)
@@ -166,8 +172,8 @@ class App:
             last_modified = self.tor.last_modified
             messages = self.tor.get_messages(since=ims, until=last_modified)
 
-            if messages is None or len(messages) < 1:
-                return bottle.HTTPResponse(status=304)
+            # if messages is None or len(messages) < 1:
+            #     return bottle.HTTPResponse(status=304)
 
             retval['messages'] = messages
             retval['nickname'] = self.nickname
@@ -334,9 +340,15 @@ class App:
 
         if action in ['save', 'savereload']:
 
-            config = bottle.request.forms.get('torrc', None)
-            if not config:
+            c = bottle.request.forms.get('torrc', None)
+            if not c:
                 raise bottle.HTTPError(400, exception='Configuration to be written to torrc is missing.')
+            else:
+                c = urllib.parse.unquote_plus(c)
+
+            c = c.splitlines()
+            config = [cc.strip() for cc in c]
+            config = '\n'.join(config)
 
             try:
                 with open(self.torrc, 'w') as f:
@@ -349,20 +361,27 @@ class App:
 
         if action in ['restart']:
             if self.tor.running:
-                # Let's try to be nice ... initially!
-                self.stop_tor()
 
-                # 5 seconds to shutdown cleanly...
-                counter = 0
-                while self.tor.running and counter < 5:
-                    time.sleep(1)
-                    counter += 1
+                # An exception could occur if we're unable to create a controller.
+                # This might happen, if ControlPort access was disabled.
+                with contextlib.suppress(Exception):
+
+                    # Let's try to be nice ... initially!
+                    self.stop_tor()
+
+                    # 5 seconds to shutdown cleanly...
+                    counter = 0
+                    while self.tor.running and counter < 5:
+                        time.sleep(1)
+                        counter += 1
 
             if self.tor.running:
                 # If Tor is still running ... be brutal!
                 self.tor.stop()
 
             self.tor.run(password=self.password)
+            # return if there's a commandline warning
+            return json.JSONEncoder().encode({'warning': self.tor.socks_or_control_warning})
 
         if action in ['torrc']:
             p = pathlib.WindowsPath(self.torrc).parent
