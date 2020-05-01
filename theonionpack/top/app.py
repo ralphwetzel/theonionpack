@@ -105,7 +105,6 @@ class App:
             c = []
 
         config = [cc.strip() for cc in c]
-        print(config)
 
         params = {
             'version': self.version
@@ -291,7 +290,6 @@ class App:
             try:
                 c = self.create_controller()
             except Exception as exc:
-                print(exc)
                 return
         else:
             c = controller
