@@ -42,7 +42,7 @@ This icon provides a context menu ... to monitor your Tor relay, to control it &
 
 | Tray Menu Command | Action |
 |---|---|
-| **Monitor** | Open The Onion Box, the dashboard to monitor your relay. **Default (right click) action**.
+| **Monitor** | Open The Onion Box, the dashboard to monitor your relay. **Default (left click) action**.
 | Relay Control... | Opens a web interface to control your relay: To edit *torrc* (the configuration file of your relay), to re-start your relay or re-load it's configuration & to check its log messages.
 | Options... | Opens a web interface to alter some optional aspects of The Onion Pack. This is where you can check the version numbers of the components installed ... and to define the update behaviour of The Onion Pack.
 | Stop! | Terminate The Onion Pack
