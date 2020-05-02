@@ -274,7 +274,7 @@ class Pack:
 
             if mode == 'auto':
                 self.update_status = 4  # Update found, trying to run auto-update
-                if self.get_latest_pack():
+                if self.launch_latest_theonionpack():
                     sleep(2)
                     self.do_quit()
                 else:
@@ -344,27 +344,36 @@ class Pack:
 
         return None
 
-    def get_latest_pack(self):
+    def launch_latest_theonionpack(self):
 
         url = self.get_updater_url()
 
-        if url is not None:
+        if url is None:
+            return False
 
-            file = tempfile.NamedTemporaryFile(suffix='.exe', delete=False)
+        file = tempfile.NamedTemporaryFile(suffix='.exe', delete=False)
 
-            r = requests.get(url, stream=True)
-            for chunk in r.iter_content(chunk_size=512):
-                if chunk:  # filter out keep-alive new chunks
-                    file.write(chunk)
+        r = requests.get(url, stream=True)
+        for chunk in r.iter_content(chunk_size=512):
+            if chunk:  # filter out keep-alive new chunks
+                file.write(chunk)
 
-            file.close()
+        file.close()
 
-            params = [file.name]
-            params.append('/SILENT')
-            # params.append('/VERYSILENT')
-            params.append('/LOG')
-            params.append('/SUPPRESSMSGBOXES')
-            params.append('/TASKS="startup,obfs4proxy"')
+        params = [file.name]
+
+        # Be sure to run the installer in our working directory!
+        # This is especially demanded as we are going to uninstall previous versions!
+        params.append(f'/DIR="{os.getcwd()}"')
+
+        params.append('/RunUninstall')
+
+        params.append('/SILENT')
+        # params.append('/VERYSILENT')
+        params.append('/LOG')
+        params.append('/SUPPRESSMSGBOXES')
+
+        with contextlib.suppress(Exception):
             subprocess.Popen(params, close_fds=True, creationflags=subprocess.DETACHED_PROCESS + subprocess.CREATE_NEW_PROCESS_GROUP)
             return True
 
