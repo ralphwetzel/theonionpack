@@ -3,7 +3,7 @@ import click
 import pathlib
 import site
 
-# theonionpack.py -d/-t --tor <path> --data <path>
+# theonionpack.py --debug/--trace --tor <path> --data <path>
 
 import configparser
 
