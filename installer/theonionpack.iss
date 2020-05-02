@@ -20,6 +20,8 @@
 ; /top="theonionpack-xx.x.tar.gz":  To install a locally (at setup time) provided package of The Onion Pack
 ;                                   (rather then using the one from this installer or pip'ing it from online).
 
+; /RunUninstall:  Run the uninstallers found in the {app} directory
+
 ; All default INSTALLER commandline options are supported as well.
 ; In case of trouble - to enable logging - use:
 ; /LOG              Create a log file in the user's TEMP directory
@@ -72,7 +74,7 @@ PrivilegesRequired=lowest
 ; There's a 'bug' (better an annoyance) in Inno Script Studio that limits
 ; ExtraDiskSpaceRequired to 10000000 in the dialog window.
 ; It yet doesn't overwrite the value here - as long as we don't touch it. 
-ExtraDiskSpaceRequired=87439216
+ExtraDiskSpaceRequired=102347592
 MinVersion=0,6.0
 LicenseFile={# LicenseFile}
 WizardImageFile=compiler:WizModernImage-IS.bmp
@@ -88,6 +90,7 @@ VersionInfoCopyright={# __copyright__}
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64
 DisableDirPage=no
+UsePreviousTasks=yes
 
 [Files]
 ; The statement of Independence; only used by the installer.
